@@ -270,9 +270,7 @@ function QuestForgePage() {
     setConfigureId(custom.id);
   };
 
-  // Toyota demo overlay: applied at RENDER time only (mock mode + completed
-  // run), so shared run state never carries theme-specific content and
-  // switching themes after a finished run stays consistent.
+  // Run results stay authoritative across interface switches as well.
   const displayReward = run?.reward ?? null;
   const displayMetrics = run?.metrics ?? null;
   const avoidedPct = displayMetrics ? computeAvoidedPct(displayMetrics) : 0;
