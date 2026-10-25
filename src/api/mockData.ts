@@ -1,5 +1,6 @@
 import type {
   AgentDefinition,
+  DemoCustomer,
   Integration,
   LogEvent,
   QuestLogEntry,

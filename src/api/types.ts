@@ -119,6 +119,63 @@ export interface Run {
   log: QuestLogEntry[];
 }
 
+export interface DemoCustomer {
+  id: string;
+  name: string;
+  vehicle: string;
+  scenario_label: string;
+  description: string;
+}
+
+export interface CreateRunInput {
+  goal: string;
+  team: TeamDefinition;
+  customerId: string;
+}
+
+// ---- Raw backend shapes (docs/QuestMaster_API_SPEC.md §3.9, §3.10, §10) ----
+// The backend run response uses `recommendation` + `audit_events`; the client
+// normalizes them into the frontend `Run` shape (reward + log).
+
+export interface ToyotaRecommendation {
+  recommended_action: string;
+  confidence: number;
+  headline: string;
+  summary: string;
+  reasons: string[];
+  assumptions?: string[];
+  next_step?: { label: string; action_type: string };
+  options?: unknown[];
+}
+
+export interface AuditEvent {
+  id: string;
+  timestamp: string;
+  run_id?: string;
+  agent_id?: string;
+  event_type?: string;
+  executor_type?: ExecutorType;
+  resource?: string;
+  result?: string;
+  message: string;
+  cost_usd?: number;
+}
+
+export interface BackendRun {
+  run_id: string;
+  status: RunStatus;
+  goal: string;
+  created_at: string;
+  updated_at: string;
+  tasks?: Partial<RunTask>[];
+  metrics?: Partial<RunMetrics>;
+  recommendation?: ToyotaRecommendation | null;
+  audit_events?: AuditEvent[];
+  financial_context?: unknown;
+  outputs?: unknown[];
+  evaluators?: unknown[];
+}
+
 export interface RunSummary {
   run_id: string;
   goal: string;
