@@ -231,6 +231,7 @@ export function normalizeRun(raw: BackendRun): Run {
     reward,
     log,
     recommendation: recommendation ?? null,
+    portfolio_result: raw.portfolio_result ?? null,
     financial_context: raw.financial_context ?? recommendation?.financial_context ?? null,
     evaluators: raw.evaluators ?? recommendation?.evaluators ?? [],
   };

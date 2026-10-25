@@ -143,6 +143,7 @@ function QuestForgePage() {
   const isMobile = useIsMobile();
   const toyotaEnabled = enabledSourceIds.includes("toyota_customer");
   const nessieEnabled = enabledSourceIds.includes("nessie_banking");
+  const isPortfolio = plannedTeam?.policy?.scope === "portfolio";
 
   // Sample-goal switching: when the theme changes, replace the quest text
   // ONLY if it is still the previous theme's untouched sample (or empty).
@@ -361,7 +362,7 @@ function QuestForgePage() {
       );
       return;
     }
-    if (customerError || customers.length === 0) {
+    if (!isPortfolio && (customerError || customers.length === 0)) {
       toast.error("Customer data is unavailable. Reload before running.");
       return;
     }
@@ -388,7 +389,7 @@ function QuestForgePage() {
       const { run_id } = await createRun({
         goal: quest,
         team,
-        customerId,
+        customerId: isPortfolio ? "" : customerId,
         attachment_ids: attachments.map((file) => file.id),
         context_source_ids: sourceIds,
         quality_mode: workStyle === "thorough" ? "strict" : "normal",
@@ -565,7 +566,7 @@ function QuestForgePage() {
               ))}
             </select>
           </label>
-          {agents.length > 0 && toyotaEnabled && customers.length > 0 && (
+          {agents.length > 0 && toyotaEnabled && !isPortfolio && customers.length > 0 && (
             <label className="flex w-full flex-col gap-1 text-xs font-semibold text-ink-soft sm:w-auto sm:flex-row sm:items-center sm:gap-2">
               Customer
               <select
@@ -582,7 +583,7 @@ function QuestForgePage() {
               </select>
             </label>
           )}
-          {agents.length > 0 && toyotaEnabled && (
+          {agents.length > 0 && toyotaEnabled && !isPortfolio && (
             <button
               type="button"
               onClick={runMobilityTrigger}
@@ -611,8 +612,8 @@ function QuestForgePage() {
                 deletingId !== null ||
                 Boolean(planningError) ||
                 !toyotaEnabled ||
-                customerError ||
-                customers.length === 0
+                (isPortfolio && !nessieEnabled) ||
+                (!isPortfolio && (customerError || customers.length === 0))
               }
               className="btn-outline-gold w-full px-4 py-2.5 text-sm !text-ink sm:w-auto sm:py-2"
               title={!toyotaEnabled ? "Enable Toyota customer context to run" : undefined}
@@ -654,21 +655,31 @@ function QuestForgePage() {
       {agents.length > 0 && toyotaEnabled && (
         <section className="parchment-panel p-4" aria-label="Execution preview">
           <h2 className="gold-heading text-lg font-bold">Before you run</h2>
-          <p className="mt-2 text-sm text-ink">
-            This demo evaluates one selected Toyota customer. It does not scan the portfolio or send offers.
-          </p>
-          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-ink">
-            <li>TOOL · Load synthetic Toyota profile, vehicle, lease and usage context.</li>
-            <li>CODE · Check relevance. If no decision is due, stop with NO_ACTION_NEEDED, without Nessie or an LLM.</li>
-            {nessieEnabled ? (
-              <>
-                <li>TOOL · Read Capital One Nessie banking data; CODE · derive financial summaries and score mobility options.</li>
-                <li>AGENT / LLM · Explain the scored options using derived summaries only; CODE · validate the result. A reviewer may run when policy requires it.</li>
-              </>
-            ) : (
-              <li>Nessie is off: context and relevance checks only. No financial recommendation will be generated.</li>
-            )}
-          </ol>
+          {isPortfolio ? (
+            <>
+              <p className="mt-2 text-sm text-ink">This run evaluates the full synthetic Toyota demo portfolio. No offers, applications or transactions are submitted.</p>
+              <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-ink">
+                <li>CODE · Load the installed Toyota portfolio.</li>
+                {plannedTeam?.policy?.workflow_kind === "mobility_decision" && <li>CODE · Skip customers without a relevant mobility decision before any banking or LLM work.</li>}
+                <li>TOOL · Read Nessie for the remaining customers; CODE · derive financial summaries.</li>
+                <li>CODE · {plannedTeam?.policy?.workflow_kind === "loan_opportunity" ? "Rank financial fit for vehicle-loan outreach." : "Score mobility options and rank decision urgency."}</li>
+                <li>AGENT / LLM · Explain the deterministic shortlist using derived summaries only.</li>
+              </ol>
+              {!nessieEnabled && <p role="alert" className="mt-2 text-sm text-destructive">Enable Nessie banking to run this financial portfolio workflow.</p>}
+            </>
+          ) : (
+            <>
+              <p className="mt-2 text-sm text-ink">This run evaluates one selected Toyota customer. It does not scan the portfolio or send offers.</p>
+              <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-ink">
+                <li>TOOL · Load synthetic Toyota profile, vehicle, lease and usage context.</li>
+                <li>CODE · Check relevance. If no decision is due, stop with NO_ACTION_NEEDED, without Nessie or an LLM.</li>
+                {nessieEnabled ? <>
+                  <li>TOOL · Read Nessie banking data; CODE · derive financial summaries and score mobility options.</li>
+                  <li>AGENT / LLM · Explain scored options using derived summaries; CODE · validate the result. Policy may require a reviewer.</li>
+                </> : <li>Nessie is off: context and relevance checks only. No financial recommendation will be generated.</li>}
+              </ol>
+            </>
+          )}
           <p className="mt-3 text-xs text-ink-soft">Run enforces the submitted tools, permissions and budgets. Missing access fails; it is never added automatically.</p>
         </section>
       )}
@@ -726,10 +737,15 @@ function QuestForgePage() {
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-display text-lg font-bold text-ink">{copy.outputs}</h3>
               <span className="chip-parchment !text-[10px] uppercase tracking-wider">
-                {isMockMode() ? copy.outputsBadge : run?.tasks.some((task) => task.data_source === "NESSIE_FALLBACK") ? "Fixture banking data" : copy.outputsBadgeLive}
+                {isMockMode() ? copy.outputsBadge : (run?.tasks.some((task) => task.data_source === "NESSIE_FALLBACK" || task.data_source === "NESSIE_MIXED") || run?.portfolio_result?.candidates.some((candidate) => candidate.financial_summary.nessie_provenance === "NESSIE_FALLBACK")) ? "Fixture banking data" : copy.outputsBadgeLive}
               </span>
             </div>
-            {displayReward ? (
+            {run.portfolio_result ? (
+              <div>
+                <h4 className="font-display text-base font-bold text-ink">{run.portfolio_result.purpose === "loan" ? "Vehicle-loan opportunity shortlist" : "Mobility decision priorities"}</h4>
+                <p className="mt-2 text-sm text-ink-soft">{run.portfolio_result.narrative || "No relevant customers need action."}</p>
+              </div>
+            ) : displayReward ? (
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Trophy className="h-4 w-4 text-gold-dim" />

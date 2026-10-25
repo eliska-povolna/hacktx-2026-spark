@@ -19,15 +19,37 @@ export function RunDetails({
   const nessieSources = run.tasks.filter((task) => /nessie/i.test(task.data_source) || /nessie/i.test(task.action) || /nessie/i.test(task.name));
   return (
     <div className="space-y-6">
+      {run.portfolio_result && (
+        <section aria-label="Portfolio results">
+          <h2 className="gold-heading text-xl font-bold">{run.portfolio_result.purpose === "loan" ? "Loan opportunity ranking" : "Mobility priority ranking"}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Heuristic demo scores, not credit approval or eligibility decisions. Each banking source is shown per customer.</p>
+          <div className="mt-3 overflow-x-auto rounded border border-border">
+            <table className="w-full text-left text-sm">
+              <thead><tr><th className="p-3">Customer</th><th className="p-3">Score / 100</th><th className="p-3">Financial context</th><th className="p-3">Banking source</th><th className="p-3">Next step / evidence</th></tr></thead>
+              <tbody>{run.portfolio_result.candidates.map((candidate) => <tr key={candidate.customer_id} className="border-t border-border align-top">
+                <td className="p-3 font-semibold">{candidate.name}</td>
+                <td className="p-3">{candidate.score}</td>
+                <td className="p-3">{humanize(candidate.financial_summary.financial_stress)} · {formatMoney(candidate.financial_summary.safe_mobility_budget)} safe monthly budget</td>
+                <td className="p-3 font-mono text-xs">{candidate.financial_summary.nessie_provenance ?? "Unavailable"}</td>
+                <td className="p-3">{candidate.recommended_action && <p className="font-semibold">{humanize(candidate.recommended_action)}</p>}{candidate.reasons.join("; ")}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+          {run.portfolio_result.skipped_customers.length > 0 && <div className="mt-3 text-sm">
+            <h3 className="font-semibold">No action needed — banking and LLM skipped</h3>
+            <ul className="mt-2 space-y-1">{run.portfolio_result.skipped_customers.map((customer) => <li key={customer.customer_id}>{customer.name}: {customer.reason}</li>)}</ul>
+          </div>}
+        </section>
+      )}
       {run.status === "NO_ACTION_NEEDED" && (
         <section className="parchment-panel border border-gold-dim/40 p-4">
           <h2 className="gold-heading text-lg font-bold">No action needed</h2>
           <p className="mt-1 text-sm text-ink-soft">
-            Mobility relevance check decided no further banking or recommendation work was required for this customer.
+            Mobility relevance checks decided no further banking or recommendation work was required.
           </p>
         </section>
       )}
-      {(showNessie || financial) && (
+      {(showNessie || financial) && !run.portfolio_result && (
         <section>
           <h2 className="gold-heading text-xl font-bold">Nessie / banking provenance</h2>
           {financial ? (
