@@ -81,8 +81,13 @@ export interface ThemeCopy {
     resetSub: string;
   };
   toastPlanError: string;
+  toastNoGoal: string;
+  toastRunError: string;
   toastAgentRemoved: (name: string) => string;
   toastTeamRemoved: (name: string) => string;
+  /** Themed profile title shown under the user name (presentation only). */
+  userTitle: string;
+  emailPlaceholder: string;
   openTeam: string;
   openTeamHint: string;
   reportGoalCol: string;
@@ -480,9 +485,71 @@ export const TOYOTA_METRICS: RunMetrics = {
 };
 
 export function getAgentsForTheme(theme: AppTheme, agents: AgentDefinition[]): AgentDefinition[] {
-  return agents.map((agent) => ({
-    ...agent,
-    ...(theme === "toyota" ? TOYOTA_ROLES[agent.id] : undefined),
-    portrait: getPortrait(theme, agent.id) || agent.portrait,
-  }));
+  const presentation =
+    theme === "toyota" ? TOYOTA_PRESENTATION : theme === "professional" ? PRO_PRESENTATION : undefined;
+  return agents.map((agent) => {
+    // User-edited agents keep their own role/skills/tools/scopes — theme
+    // defaults apply only to untouched agents. Portraits always follow the
+    // active theme (they are derived, never edited).
+    const override = agent.customized ? undefined : presentation?.[agent.id];
+    return {
+      ...agent,
+      ...(override?.role ? { role: override.role } : undefined),
+      ...(override?.skills ? { skills: override.skills } : undefined),
+      ...(override?.tools ? { allowed_tools: override.tools } : undefined),
+      ...(override?.scopes
+        ? { permissions: { ...agent.permissions, data_scopes: override.scopes } }
+        : undefined),
+      portrait: getPortrait(theme, agent.id) || agent.portrait,
+    };
+  });
+}
+
+// ---- Mock-content text adapter (presentation only) ----
+// Teams / Reports / Logs share one mock dataset; these ordered replacement
+// pairs re-label the fantasy wording for the non-fantasy themes so each
+// interface reads naturally without duplicating the data.
+
+const MOCK_TEXT_ADAPTATIONS: Record<Exclude<AppTheme, "fantasy">, [string, string][]> = {
+  professional: [
+    ["Merchant Insight Party", "Customer Insight Team"],
+    ["Support Guild", "Support Operations Team"],
+    ["Market Watchers", "Market Analysis Team"],
+    ["Moonlit Griffin Inn", "our flagship customer account"],
+    ["Silver Stag Lodge", "the support organization"],
+    ["Ember Fox Tavern", "the key account"],
+    ["Scroll Archive", "Document Search"],
+    ["Compass Queries", "External Research"],
+    ["Ledger Reader", "Financial Data Reader"],
+    ["guest feedback", "customer feedback"],
+    ["Party assembled: 5 adventurers ready", "Team assembled: 5 agents ready"],
+    ["Adventurer completed task", "Agent completed task"],
+    ["Quest created", "Run created"],
+    ["Quest completed: reward revealed", "Run completed: result ready"],
+    ["Quest Master", "Team Owner"],
+  ],
+  toyota: [
+    ["Merchant Insight Party", "Mobility Decision Team"],
+    ["Support Guild", "Customer Context Team"],
+    ["Market Watchers", "Mobility Analysis Team"],
+    ["Moonlit Griffin Inn", "the selected Toyota customer"],
+    ["Silver Stag Lodge", "the customer support program"],
+    ["Ember Fox Tavern", "the mobility portfolio"],
+    ["Scroll Archive", "Knowledge Base"],
+    ["Compass Queries", "External Research"],
+    ["Ledger Reader", "Financial Context Builder"],
+    ["guest feedback", "customer feedback"],
+    ["Party assembled: 5 adventurers ready", "Team assembled: 5 specialists ready"],
+    ["Adventurer completed task", "Specialist completed task"],
+    ["Quest created", "Decision started"],
+    ["Quest completed: reward revealed", "Decision completed: recommendation ready"],
+    ["Quest Master", "Workspace Owner"],
+  ],
+};
+
+export function adaptMockText(theme: AppTheme, text: string): string {
+  if (theme === "fantasy") return text;
+  let out = text;
+  for (const [from, to] of MOCK_TEXT_ADAPTATIONS[theme]) out = out.replaceAll(from, to);
+  return out;
 }
