@@ -132,8 +132,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             {user?.name?.charAt(0) ?? "Q"}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold">{user?.name ?? "Quest Master"}</div>
-            <div className="text-[11px] text-muted-foreground">{user?.title ?? "Quest Master"}</div>
+            <div className="truncate text-sm font-semibold">{user?.name ?? copy.userTitle}</div>
+            <div className="text-[11px] text-muted-foreground">{copy.userTitle}</div>
           </div>
           <Button
             variant="ghost"

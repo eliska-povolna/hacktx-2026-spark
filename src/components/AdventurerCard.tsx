@@ -37,7 +37,7 @@ export function AdventurerCard({
             {agent.name.charAt(0)}
           </span>
         </div>
-        <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-forest">
+        <span className="agent-ready-badge absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold">
           <CheckCircle2 className="h-3 w-3" /> {copy.ready}
         </span>
       </div>
