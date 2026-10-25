@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { getRuns } from "@/api/client";
 import type { RunSummary } from "@/api/types";
+import { THEME_COPY, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/reports")({
@@ -22,18 +23,18 @@ export const Route = createFileRoute("/_authenticated/reports")({
 });
 
 function ReportsPage() {
+  const { theme } = useTheme();
+  const copy = THEME_COPY[theme];
   const [runs, setRuns] = useState<RunSummary[]>([]);
 
   useEffect(() => {
-    getRuns().then(setRuns).catch(() => toast.error("Could not load chronicles."));
+    getRuns().then(setRuns).catch(() => toast.error("Could not load reports."));
   }, []);
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="gold-heading text-3xl font-bold">Chronicles</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Reports & insights from your completed quests.
-      </p>
+      <h1 className="gold-heading text-3xl font-bold">{copy.pages.reportsTitle}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">{copy.pages.reportsSub}</p>
 
       <div className="parchment-panel mt-6 overflow-x-auto p-2 sm:p-4">
         <table className="w-full min-w-[760px] text-sm">

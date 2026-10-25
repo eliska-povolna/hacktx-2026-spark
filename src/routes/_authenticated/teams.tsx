@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { getSavedParties } from "@/api/client";
 import { PORTRAITS } from "@/api/mockData";
 import type { SavedParty } from "@/api/types";
+import { THEME_COPY, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/teams")({
@@ -33,6 +34,8 @@ const STATUS_STYLES: Record<SavedParty["last_run_status"], string> = {
 };
 
 function TeamsPage() {
+  const { theme } = useTheme();
+  const copy = THEME_COPY[theme];
   const [parties, setParties] = useState<SavedParty[]>([]);
 
   useEffect(() => {
@@ -54,10 +57,8 @@ function TeamsPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="gold-heading text-3xl font-bold">Adventuring Parties</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Your saved bands of adventurers, ready for the next quest.
-      </p>
+      <h1 className="gold-heading text-3xl font-bold">{copy.pages.teamsTitle}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">{copy.pages.teamsSub}</p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {parties.map((party) => (
@@ -72,15 +73,19 @@ function TeamsPage() {
 
             <div className="mt-4 flex -space-x-3">
               {party.memberIds.map((id) => (
-                <img
-                  key={id}
-                  src={PORTRAITS[id]}
-                  alt={id}
-                  loading="lazy"
-                  width={816}
-                  height={816}
-                  className="h-11 w-11 rounded-full border-2 border-gold-dim object-cover object-top"
-                />
+                <span key={id} className="relative">
+                  <img
+                    src={PORTRAITS[id]}
+                    alt={id}
+                    loading="lazy"
+                    width={816}
+                    height={816}
+                    className="agent-portrait-img h-11 w-11 rounded-full border-2 border-gold-dim object-cover object-top"
+                  />
+                  <span className="agent-portrait-initial h-11 w-11 rounded-full border-2 border-border font-display text-sm">
+                    {id.charAt(0).toUpperCase()}
+                  </span>
+                </span>
               ))}
             </div>
 
