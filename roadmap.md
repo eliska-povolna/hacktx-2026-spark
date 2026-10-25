@@ -35,6 +35,8 @@
 - [x] VITE_API_BASE_URL=https://questmaster.tech/api (never raw IP:8000 — Caddy exposes only HTTPS)
 - [x] Live mode is the default and local .env (gitignored) uses the live API.
 
+- [x] Function-based portrait assignment: live-planned agents are classified by role/skills/purpose (finance→Maya, research→Rowan, analysis→Brann, decision→Selene, review→Odo) instead of random hashing; identity preserved across theme switches via portrait-key mapping.
+
 ## Open
 - [x] Wire live Tiger saved-team summaries/detail, explicit saving, duplication/deletion, and refreshed sidebar names without browser team persistence. Real-browser list/open/duplicate/save/reload/delete verified using a disposable copy; 58 tests pass and automatic build is clean.
 - [x] Connect Create attachments to live multipart upload/delete; forward IDs to planning and runs; preserve design and avoid team-save endpoints. Nine attachment tests and 30 related tests pass.
