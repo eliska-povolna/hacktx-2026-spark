@@ -14,8 +14,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { createRun, getRun, planTeam } from "@/api/client";
-import type { AgentDefinition, Run } from "@/api/types";
+import { createRun, getDemoCustomers, getRun, isMockMode, planTeam } from "@/api/client";
+import type { AgentDefinition, DemoCustomer, Run, TeamDefinition } from "@/api/types";
 import { AdventurerCard } from "@/components/AdventurerCard";
 import { CharacterSheet } from "@/components/CharacterSheet";
 import { ConfigureAdventurerDialog } from "@/components/ConfigureAdventurerDialog";
