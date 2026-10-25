@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { MOCK_AGENTS } from "@/api/mockData";
-import { adaptMockText, getAgentsForTheme } from "@/lib/theme";
+import { adaptMockText, getSampleAgentsForTheme as getAgentsForTheme } from "@/lib/theme";
 
 describe("theme presentation overlays", () => {
   it("applies Toyota roles, tools and least-privilege scopes to default agents", () => {
