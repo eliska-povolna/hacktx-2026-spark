@@ -36,6 +36,7 @@
 - [x] Live mode is the default and local .env (gitignored) uses the live API.
 
 ## Open
+- [x] Wire live Tiger saved-team summaries/detail, explicit saving, duplication/deletion, and refreshed sidebar names without browser team persistence. Real-browser list/open/duplicate/save/reload/delete verified using a disposable copy; 58 tests pass and automatic build is clean.
 - [x] Connect Create attachments to live multipart upload/delete; forward IDs to planning and runs; preserve design and avoid team-save endpoints. Nine attachment tests and 30 related tests pass.
 - [ ] Verify successful live upload → plan → run → delete after the deployed POST https://questmaster.tech/api/attachments stops returning 404. Current real-browser upload failure is visible and no mock replacement is used.
 - [x] Final production integration pass: separate Toyota entry, truthful live activity/reports/integration states, complete recommendation details, hidden mock sidebar teams and README. Live Sarah→Buy / Jordan→Return verified in browser; mock/live API tests pass (45 tests); automatic build/typecheck OK. Full lint has existing formatting debt; changed-file semantic lint passes.
@@ -44,7 +45,7 @@
 - [x] Generate from the active interface goal and keep generated configurations identical across styles.
 - [x] Prepare external saved-team CRUD, reopening by teamId, editing and explicit Save Team; no mock fallback in live mode.
 - [x] Supply backend implementation prompts in docs/QuestMaster_TEAM_BACKEND_PROMPTS.md; verify interface switching and session mock CRUD.
-- [ ] External backend must implement database team CRUD and atomic save-on-plan; live GET /api/teams returns 404. Backend owner must supply a real scoped session contract before authenticated persistence can be verified.
+- [x] Tiger exposes live GET/POST/DELETE /api/teams and full detail restoration; planning stays separate from explicit saving.
 - Verify hosted frontend origins in backend CORS_ORIGINS (localhost live flow now succeeds; hosted origins were not rechecked in this pass):
   - https://hacktx-2026-spark.lovable.app (published/primary)
   - https://id-preview--1822652e-47c8-4da8-ba55-6c900a2db286.lovable.app (preview)

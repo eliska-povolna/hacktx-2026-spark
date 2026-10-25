@@ -13,11 +13,12 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { CrestLogo } from "@/components/CrestLogo";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { Button } from "@/components/ui/button";
-import { isMockMode } from "@/api/client";
+import { savedTeamsQueryOptions } from "@/api/saved-teams-query";
 import { useAuth } from "@/lib/auth";
 import { THEME_COPY, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { theme } = useTheme();
   const copy = THEME_COPY[theme];
   const navigate = useNavigate();
+  const { data: savedTeams = [] } = useQuery(savedTeamsQueryOptions);
 
   const navItems = [
     { title: copy.nav.create, subtitle: copy.nav.createSub, to: "/create", icon: NAV_ICONS.create },
@@ -95,21 +97,22 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         })}
 
         {/* Saved parties */}
-        {isMockMode() && <div className="sidebar-saved-parties pt-5">
+        {savedTeams.length > 0 && <div className="sidebar-saved-parties pt-5">
           <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gold-dim">
             {copy.savedParties}
           </div>
-          {copy.savedTeamNames.map((name, i) => {
+          {savedTeams.slice(0, 3).map((team, i) => {
             const PartyIcon = SAVED_PARTY_ICONS[i % SAVED_PARTY_ICONS.length] ?? Gem;
             return (
               <Link
-                key={name}
-                to="/teams"
+                key={team.id}
+                to="/create"
+                search={{ teamId: team.id }}
                 onClick={onNavigate}
                 className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-foreground/75 transition-colors hover:bg-sidebar-accent"
               >
                 <PartyIcon className="h-4 w-4 text-gold-dim" />
-                {name}
+                <span className="min-w-0 truncate" title={team.name}>{team.name}</span>
               </Link>
             );
           })}

@@ -39,23 +39,35 @@ describe("team generation and storage", () => {
     }
   });
 
-  it("creates separate teams and reads edited configurations back without changing styles", async () => {
-    vi.stubEnv("VITE_USE_MOCK_API", "true");
+  it("saves edited definitions through POST and restores the live goal and agents", async () => {
+    vi.stubEnv("VITE_USE_MOCK_API", "false");
+    const summary = { id: "saved-1", name: "Feedback Team", purpose: "Study guest feedback", member_ids: ["maya"], estimated_cost_usd: 0.03, last_run_status: "NEVER" };
+    const edited = { id: "planned-1", team_name: "Feedback Team", summary: "Hospitality", agents: MOCK_AGENTS.slice(0, 1).map((agent) => ({ ...agent, role: "Edited Analyst" })) };
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify(summary), { status: 201 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ teams: [summary] })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ summary, team: edited })))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetcher);
+    const storage = vi.spyOn(Storage.prototype, "setItem");
     const { saveTeam, getSavedTeam, getSavedTeams, deleteSavedTeam } = await import("@/api/client");
-    const input = { team: { id: "planner-reused-id", team_name: "Feedback Team", summary: "Hospitality", agents: MOCK_AGENTS },
-      goal: "Study guest feedback", interface_theme: "fantasy" as const };
-    const first = await saveTeam(input);
-    const second = await saveTeam(input);
-    expect(first.id).not.toBe(second.id);
-    expect(await getSavedTeams()).toHaveLength(2);
-    await saveTeam({ ...input, team: { ...input.team, agents: input.team.agents.slice(0, 2).map((agent) => ({ ...agent, role: "Edited Analyst" })) } }, first.id);
-    const loaded = await getSavedTeam(first.id);
+    const saved = await saveTeam({ team: edited, goal: "Study guest feedback" });
+    expect(saved.memberIds).toEqual(["maya"]);
+    const body = JSON.parse(fetcher.mock.calls[0]?.[1].body);
+    expect(Object.keys(body).sort()).toEqual(["goal", "team"]);
+    expect(body).toMatchObject({ goal: "Study guest feedback", team: { id: "planned-1", agents: [{ role: "Edited Analyst" }] } });
+    expect(fetcher.mock.calls[0]?.[1].method).toBe("POST");
+    expect(fetcher.mock.calls[0]?.[0]).toBe("https://questmaster.tech/api/teams");
+    expect(await getSavedTeams()).toEqual([saved]);
+    const loaded = await getSavedTeam(saved.id);
     expect(loaded.goal).toBe("Study guest feedback");
-    expect(loaded.interface_theme).toBe("fantasy");
-    expect(loaded.agents).toHaveLength(2);
+    expect(loaded.id).toBe("saved-1");
+    expect(loaded.agents).toHaveLength(1);
     expect(loaded.agents[0]?.role).toBe("Edited Analyst");
-    await deleteSavedTeam(second.id);
-    expect(await getSavedTeams()).toHaveLength(1);
+    await deleteSavedTeam(saved.id);
+    expect(fetcher.mock.calls[3]?.[1].method).toBe("DELETE");
+    expect(fetcher.mock.calls[3]?.[0]).toBe("https://questmaster.tech/api/teams/saved-1");
+    expect(storage).not.toHaveBeenCalled();
+    storage.mockRestore();
   });
 
   it("surfaces live storage failures instead of returning mock parties", async () => {

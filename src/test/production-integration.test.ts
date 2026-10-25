@@ -20,10 +20,13 @@ describe("live data must never silently fall back", () => {
     expect(fetcher.mock.calls[0]?.[0]).toBe("https://questmaster.tech/api/audit-events?limit=200");
     expect(events[0]).toMatchObject({ id: "audit-real", category: "TOOL", actor: "Maya", run_id: "run-real", timestamp: "2026-10-25T07:00:00Z" });
   });
-  it("legacy parties cannot fabricate live account data", async () => {
+  it("legacy parties read the live teams endpoint and map member IDs", async () => {
     vi.stubEnv("VITE_USE_MOCK_API", "false");
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ teams: [{ id: "live-1", name: "Live team", purpose: "Analysis", member_ids: ["agent-1"], estimated_cost_usd: 0, last_run_status: "NEVER" }] })));
+    vi.stubGlobal("fetch", fetcher);
     const api = await import("@/api/client");
-    await expect(api.getSavedParties()).rejects.toThrow("unavailable in live mode");
+    expect((await api.getSavedParties())[0]?.memberIds).toEqual(["agent-1"]);
+    expect(fetcher.mock.calls[0]?.[0]).toBe("https://questmaster.tech/api/teams");
   });
   it("explicit mock mode still provides fixtures without contacting the backend", async () => {
     vi.stubEnv("VITE_USE_MOCK_API", "true");
@@ -32,7 +35,6 @@ describe("live data must never silently fall back", () => {
     expect((await api.getRuns()).length).toBeGreaterThan(0);
     expect((await api.getLogEvents()).length).toBeGreaterThan(0);
     expect((await api.getIntegrations()).length).toBeGreaterThan(0);
-    expect((await api.getSavedParties()).length).toBeGreaterThan(0);
     expect(fetcher).not.toHaveBeenCalled();
   });
 });
