@@ -468,16 +468,26 @@ const FUNCTION_KEYWORDS: [RegExp, AgentFunctionKey][] = [
   [/analy|optimi|process|pattern|operation|metric|vehicle|usage|data(?!\s*privacy)/i, "brann"],
 ];
 
-export function classifyAgentFunction(agent: {
+export interface AgentFunctionSource {
+  name?: string | undefined;
   role?: string | undefined;
   skills?: string[] | undefined;
   purpose?: string | undefined;
   description?: string | undefined;
   permissions?: { data_scopes?: string[] | undefined } | undefined;
-}): AgentFunctionKey | null {
-  const text = [agent.role, agent.purpose, agent.description,
-    ...(agent.skills ?? []), ...(agent.permissions?.data_scopes ?? [])]
-    .filter(Boolean).join(" ");
+}
+
+// scope "title" uses only name + role (the planner's concise labels);
+// "full" also scans purpose/skills/scopes, where keywords are noisier.
+export function classifyAgentFunction(
+  agent: AgentFunctionSource,
+  scope: "title" | "full" = "full",
+): AgentFunctionKey | null {
+  const text = scope === "title"
+    ? [agent.name, agent.role].filter(Boolean).join(" ")
+    : [agent.name, agent.role, agent.purpose, agent.description,
+       ...(agent.skills ?? []), ...(agent.permissions?.data_scopes ?? [])]
+       .filter(Boolean).join(" ");
   for (const [pattern, key] of FUNCTION_KEYWORDS) {
     if (pattern.test(text)) return key;
   }
