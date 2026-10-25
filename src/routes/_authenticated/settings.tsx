@@ -5,7 +5,9 @@ import { toast } from "sonner";
 
 import { getApiBaseUrl, getIntegrations, isMockMode } from "@/api/client";
 import type { Integration } from "@/api/types";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useAuth } from "@/lib/auth";
+import { THEME_COPY, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -31,6 +33,8 @@ const STATUS_LABEL: Record<Integration["status"], string> = {
 
 function SettingsPage() {
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const copy = THEME_COPY[theme];
   const [integrations, setIntegrations] = useState<Integration[]>([]);
 
   useEffect(() => {
@@ -40,8 +44,8 @@ function SettingsPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h1 className="gold-heading text-3xl font-bold">Sanctum</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Settings & integrations.</p>
+        <h1 className="gold-heading text-3xl font-bold">{copy.pages.settingsTitle}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{copy.pages.settingsSub}</p>
       </div>
 
       {/* Profile */}
@@ -92,10 +96,7 @@ function SettingsPage() {
         <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-ink">
           <Palette className="h-5 w-5 text-gold-dim" /> Interface
         </h2>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-ink">Theme</span>
-          <span className="chip-parchment">Fantasy</span>
-        </div>
+        <ThemeSwitcher />
       </section>
 
       {/* Backend connection */}
