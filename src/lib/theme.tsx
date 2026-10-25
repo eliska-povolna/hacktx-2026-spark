@@ -143,7 +143,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
     ready: "Ready",
     toolsTitle: "Tools & Artifacts",
     sampleQuest:
-      "Study the recent guest feedback for the Moonlit Griffin Inn and recommend the three highest-impact improvements for service, pricing, and repeat visits.",
+      "Determine the smartest next mobility decision for this customer using vehicle, contract, usage, and financial context.",
     contextChips: ["Guest Feedback", "Ledger Data", "Competitor Notes", "Guild Policies"],
     brandTagline: "The best agent platform\nknows when not to use an agent.",
     quote: "“Good questions lead to greater journeys.”",
@@ -216,7 +216,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
     ready: "Ready",
     toolsTitle: "Tools",
     sampleQuest:
-      "Analyze recent customer feedback and recommend the three highest-impact improvements for service, pricing, and customer retention.",
+      "Determine the smartest next mobility decision for this customer using vehicle, contract, usage, and financial context.",
     contextChips: ["Customer Feedback", "Financial Data", "Competitor Notes", "Policies"],
     brandTagline: "The best agent platform\nknows when not to use an agent.",
     quote: "“Good questions lead to greater journeys.”",

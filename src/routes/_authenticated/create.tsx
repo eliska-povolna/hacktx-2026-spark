@@ -309,7 +309,20 @@ function QuestForgePage() {
     if (!plannedTeam || saving || planningError) return;
     setSaving(true);
     try {
-      const saved = await saveTeam({ goal: quest, team: { ...plannedTeam, agents: baseAgents } });
+      const saved = await saveTeam({
+        goal: quest,
+        team: {
+          ...plannedTeam,
+          agents: baseAgents,
+          policy: {
+            ...plannedTeam.policy,
+            max_llm_calls: plannedTeam.policy?.max_llm_calls ?? 6,
+            max_llm_cost_usd: plannedTeam.policy?.max_llm_cost_usd ?? 0.2,
+            work_style: workStyle,
+            guardrails: plannedTeam.policy?.guardrails ?? [],
+          },
+        },
+      });
       setPlannedTeam((current) => current ? { ...current, id: saved.id } : current);
       await queryClient.invalidateQueries({ queryKey: savedTeamsQueryOptions.queryKey });
       toast.success(`${saved.name} saved.`);
@@ -555,7 +568,24 @@ function QuestForgePage() {
             Work style
             <select
               value={workStyle}
-              onChange={(e) => setWorkStyle(e.target.value as WorkStyle)}
+              onChange={(e) => {
+                const next = e.target.value as WorkStyle;
+                setWorkStyle(next);
+                setPlannedTeam((current) =>
+                  current
+                    ? {
+                        ...current,
+                        policy: {
+                          ...current.policy,
+                          max_llm_calls: current.policy?.max_llm_calls ?? 6,
+                          max_llm_cost_usd: current.policy?.max_llm_cost_usd ?? 0.2,
+                          work_style: next,
+                          guardrails: current.policy?.guardrails ?? [],
+                        },
+                      }
+                    : current,
+                );
+              }}
               className="parchment-inset w-full max-w-full truncate px-2 py-2 text-xs text-ink outline-none focus:border-gold-dim sm:w-auto sm:py-1.5"
               disabled={planning || running}
             >
@@ -685,9 +715,12 @@ function QuestForgePage() {
       )}
 
       {planningError && (
-        <p role="alert" className="parchment-panel p-4 text-sm text-destructive">
-          {planningError} Assemble successfully or reload a saved team before running or saving. Any team still displayed is from the previous plan.
-        </p>
+        <div role="alert" className="parchment-panel space-y-1 p-4 text-sm text-destructive">
+          <p>{planningError}</p>
+          <p className="text-ink-soft">
+            Assemble successfully or reload a saved team before running or saving. Any team still displayed is from the previous plan.
+          </p>
+        </div>
       )}
 
       {/* SECTION 2 — Team */}
