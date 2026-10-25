@@ -174,14 +174,14 @@ function QuestForgePage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      {/* SECTION 1 — Quest input */}
+      {/* SECTION 1 — Goal input */}
       <section className="parchment-panel p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-display text-2xl font-bold text-ink sm:text-3xl">
-            What quest do you seek?
+          <h1 className="toyota-road font-display text-2xl font-bold text-ink sm:text-3xl">
+            {copy.goalTitle}
           </h1>
           <span className="chip-parchment !text-[10px] uppercase tracking-wider">
-            <Sparkles className="h-3 w-3" /> Sample Quest
+            <Sparkles className="h-3 w-3" /> Sample Goal
           </span>
         </div>
         <textarea
@@ -189,14 +189,17 @@ function QuestForgePage() {
           onChange={(e) => setQuest(e.target.value)}
           rows={3}
           className="parchment-inset mt-4 w-full px-4 py-3 text-sm leading-relaxed text-ink outline-none focus:border-gold-dim"
-          placeholder={SAMPLE_QUEST}
+          placeholder={copy.sampleQuest}
         />
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          {CONTEXT_CHIPS.map((chip) => (
-            <span key={chip.label} className="chip-parchment">
-              <chip.icon className="h-3 w-3" /> {chip.label}
-            </span>
-          ))}
+          {copy.contextChips.map((label, i) => {
+            const ChipIcon = CHIP_ICONS[i % CHIP_ICONS.length]!;
+            return (
+              <span key={label} className="chip-parchment">
+                <ChipIcon className="h-3 w-3" /> {label}
+              </span>
+            );
+          })}
           <button
             type="button"
             onClick={() => toast.info("File attachments arrive with the real backend.")}
@@ -213,7 +216,7 @@ function QuestForgePage() {
               >
                 {running ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" /> Quest in progress...
+                    <Loader2 className="h-4 w-4 animate-spin" /> Run in progress...
                   </>
                 ) : (
                   <>
@@ -225,11 +228,11 @@ function QuestForgePage() {
             <button onClick={assembleParty} disabled={planning} className="btn-crimson px-5 py-2 text-sm">
               {planning ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Consulting the guild archives...
+                  <Loader2 className="h-4 w-4 animate-spin" /> Assembling your team...
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4" /> Assemble My Party
+                  <Sparkles className="h-4 w-4" /> {copy.buildButton}
                 </>
               )}
             </button>
@@ -237,13 +240,13 @@ function QuestForgePage() {
         </div>
       </section>
 
-      {/* SECTION 2 — Adventurers */}
+      {/* SECTION 2 — Team */}
       {agents.length > 0 && (
         <section>
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="gold-heading text-xl font-bold">✦ Meet Your Adventurers ✦</h2>
+            <h2 className="gold-heading text-xl font-bold">{copy.teamTitle}</h2>
             <span className="text-xs text-muted-foreground">
-              {agents.length} adventurers • Ready for your quest
+              {agents.length} {copy.readySuffix}
             </span>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
@@ -260,7 +263,7 @@ function QuestForgePage() {
               className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-gold-dim/60 text-gold-dim transition-colors hover:border-gold hover:text-gold"
             >
               <Plus className="h-6 w-6" />
-              <span className="font-display text-xs font-semibold">Add Custom Adventurer</span>
+              <span className="font-display text-xs font-semibold">{copy.addCustom}</span>
             </button>
           </div>
         </section>
