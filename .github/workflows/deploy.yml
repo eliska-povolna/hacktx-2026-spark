@@ -75,5 +75,28 @@ jobs:
             NITRO_PRESET=node_server \
             bun run build
           sudo systemctl restart questmaster-frontend
-          curl -f http://127.0.0.1:3000
+          sleep 2
+          if ! sudo systemctl is-active --quiet questmaster-frontend; then
+            echo "questmaster-frontend is not active after restart" >&2
+            sudo systemctl status questmaster-frontend --no-pager -l || true
+            sudo journalctl -u questmaster-frontend -n 80 --no-pager || true
+            exit 1
+          fi
+          ok=0
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000; then
+              echo
+              ok=1
+              break
+            fi
+            echo "health attempt $i/30 failed; waiting..."
+            sleep 2
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "Frontend health check failed" >&2
+            sudo systemctl status questmaster-frontend --no-pager -l || true
+            sudo journalctl -u questmaster-frontend -n 120 --no-pager || true
+            ss -lptn 'sport = :3000' || true
+            exit 1
+          fi
           EOF
