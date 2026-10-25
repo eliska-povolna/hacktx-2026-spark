@@ -864,22 +864,22 @@ function QuestForgePage() {
             </div>
           </section>
 
-          {/* Log */}
-          <section className="parchment-panel p-5">
-            <div className="mb-3 flex items-center justify-between">
+          {/* Log — capped height so long traces don't stretch the page */}
+          <section className="parchment-panel flex max-h-[min(22rem,50vh)] flex-col p-5">
+            <div className="mb-3 flex shrink-0 items-center justify-between">
               <h3 className="font-display text-lg font-bold text-ink">{copy.log}</h3>
               <span className="text-[11px] font-semibold text-ink-soft">
                 {run.log.length} steps
               </span>
             </div>
-            <ul className="space-y-2">
+            <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1">
               {run.log.map((entry) => (
-                <li key={entry.id} className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-forest" />
+                <li key={entry.id} className="flex items-start gap-2 text-sm">
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-forest" />
                   <span className="w-14 shrink-0 font-mono text-[11px] text-ink-soft">
                     {entry.timestamp}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-ink">{entry.message}</span>
+                  <span className="min-w-0 flex-1 break-words text-ink">{entry.message}</span>
                   <ExecutorBadge executor={entry.executor} />
                 </li>
               ))}
