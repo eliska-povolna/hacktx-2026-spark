@@ -274,14 +274,14 @@ function QuestForgePage() {
         <CharacterSheet agent={selected} onConfigure={() => setConfigureId(selected.id)} />
       )}
 
-      {/* SECTIONS 4–6 — Rewards / Mana & Cost / Quest Log */}
+      {/* SECTIONS 4–6 — Outputs / Cost / Log */}
       {run && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {/* Quest Rewards */}
+          {/* Outputs */}
           <section className="parchment-panel p-5">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-ink">Quest Rewards</h3>
-              <span className="chip-parchment !text-[10px] uppercase tracking-wider">Mock Output</span>
+              <h3 className="font-display text-lg font-bold text-ink">{copy.outputs}</h3>
+              <span className="chip-parchment !text-[10px] uppercase tracking-wider">{copy.outputsBadge}</span>
             </div>
             {run.reward ? (
               <div>
@@ -305,26 +305,26 @@ function QuestForgePage() {
             ) : (
               <p className="flex items-center gap-2 text-sm italic text-ink-soft">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                The party is still on its quest... ({run.status.toLowerCase().replace("_", " ")})
+                The team is still working... ({run.status.toLowerCase().replace("_", " ")})
               </p>
             )}
           </section>
 
-          {/* Mana & Cost */}
+          {/* Cost & Efficiency */}
           <section className="parchment-panel p-5">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-ink">Mana & Cost</h3>
+              <h3 className="font-display text-lg font-bold text-ink">{copy.cost}</h3>
               <span className="text-[11px] font-semibold text-ink-soft">View Details →</span>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="parchment-inset p-2">
-                <div className="text-[10px] font-bold uppercase tracking-wide text-ink-soft">Total Cost</div>
+                <div className="text-[10px] font-bold uppercase tracking-wide text-ink-soft">AI Cost</div>
                 <div className="font-display text-xl font-bold text-ink">
                   ${run.metrics.estimated_ai_cost_usd.toFixed(2)}
                 </div>
               </div>
               <div className="parchment-inset p-2">
-                <div className="text-[10px] font-bold uppercase tracking-wide text-ink-soft">vs. Full LLM</div>
+                <div className="text-[10px] font-bold uppercase tracking-wide text-ink-soft">Full-LLM Baseline</div>
                 <div className="font-display text-xl font-bold text-ink">
                   ${run.metrics.estimated_baseline_cost_usd.toFixed(2)}
                 </div>
@@ -355,16 +355,16 @@ function QuestForgePage() {
                 </span>
               </div>
               <p className="mt-3 text-[11px] italic leading-snug text-ink-soft">
-                Adventurers define responsibility — the platform chooses code or tools instead of AI
+                Agents define responsibility — the platform chooses code or tools instead of AI
                 whenever they suffice.
               </p>
             </div>
           </section>
 
-          {/* Quest Log */}
+          {/* Log */}
           <section className="parchment-panel p-5">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-ink">Quest Log</h3>
+              <h3 className="font-display text-lg font-bold text-ink">{copy.log}</h3>
               <span className="text-[11px] font-semibold text-ink-soft">
                 {run.log.length} steps
               </span>
@@ -382,7 +382,7 @@ function QuestForgePage() {
               ))}
               {run.log.length === 0 && (
                 <li className="flex items-center gap-2 text-sm italic text-ink-soft">
-                  <Loader2 className="h-4 w-4 animate-spin" /> The quest is being planned...
+                  <Loader2 className="h-4 w-4 animate-spin" /> The run is being planned...
                 </li>
               )}
             </ul>
@@ -395,7 +395,7 @@ function QuestForgePage() {
         <div className="flex items-center gap-3 rounded-lg border border-arcane/60 bg-arcane/20 px-4 py-3">
           <Loader2 className="h-4 w-4 animate-spin text-arcane-bright" />
           <span className="text-sm font-semibold text-foreground">
-            Quest {run.run_id} — {run.status.toLowerCase().replace("_", " ")}...
+            Run {run.run_id} — {run.status.toLowerCase().replace("_", " ")}...
           </span>
           <span className="ms-auto flex gap-1.5">
             {run.tasks.map((t) => (
