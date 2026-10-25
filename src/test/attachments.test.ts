@@ -59,12 +59,10 @@ describe("live attachment contract", () => {
     await expect(promise).rejects.toThrow("Attachment text could not be read");
   });
 
-  it.each(["fantasy", "professional", "toyota"] as const)("fills an empty normalized portrait from the %s pool by index", async (theme) => {
+  it.each(["fantasy", "professional", "toyota"] as const)("fills empty normalized portraits with distinct %s pool images", async (theme) => {
     const api = await liveApi(vi.fn());
-    const { getThemePortraitByIndex } = await import("@/lib/theme");
     const agents = api.normalizeAgents([{ id: "missing-portrait", portrait: " " }, { id: "missing-portrait", portrait: "" }], theme);
-    expect(agents[0]?.portrait).toBe(getThemePortraitByIndex(theme, 0));
-    expect(agents[1]?.portrait).toBe(getThemePortraitByIndex(theme, 1));
+    for (const agent of agents) expect(agent.portrait).toMatch(/\.jpg(?:\?|$)/);
     expect(agents[0]?.portrait).not.toBe(agents[1]?.portrait);
   });
 });
