@@ -22,7 +22,7 @@ export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
             onClick={() => setTheme(option.value as AppTheme)}
             aria-pressed={theme === option.value}
             className={cn(
-              "flex-1 rounded px-2 py-1 text-[11px] font-semibold transition-colors",
+              "flex-1 rounded px-2 py-2.5 text-[11px] font-semibold transition-colors sm:py-1",
               theme === option.value
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
