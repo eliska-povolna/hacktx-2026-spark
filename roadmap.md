@@ -1,11 +1,13 @@
 # QuestMaster frontend build
 
-- [ ] Design tokens + fantasy styles (styles.css)
-- [ ] API service layer (src/api: types, mockData, client) with VITE_USE_MOCK_API
-- [ ] Client-side auth (login/signup/reset/logout, protected routes) — frontend-only per AGENTS.md
-- [ ] Generate portraits (5 adventurers) + background art
-- [ ] Global sidebar + app shell
-- [ ] Quest Forge page (/create) — quest input, adventurers, character sheet, rewards, mana & cost, quest log, mock run
-- [ ] Teams / Reports / Logs / Settings pages
-- [ ] Route head() metadata
-- [ ] Verify build + visual check
+All tasks complete:
+
+- [x] Design tokens + fantasy styles (styles.css)
+- [x] API service layer (src/api: types, mockData, client) with VITE_USE_MOCK_API
+- [x] Client-side auth (login/signup/reset/logout, protected routes)
+- [x] Portraits (5 adventurers) + background art
+- [x] Global sidebar + app shell
+- [x] Quest Forge page (/create)
+- [x] Teams / Reports / Logs / Settings pages
+- [x] Route head() metadata
+- [x] Verified: build OK, tests pass, full flow tested in browser (signup → assemble → run → logout → login → route guard)
