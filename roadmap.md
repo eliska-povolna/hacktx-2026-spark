@@ -36,6 +36,7 @@
 - [x] Live mode is the default and local .env (gitignored) uses the live API.
 
 ## Open
+- [ ] Wire live Tiger saved-team summaries/detail, explicit saving, duplication/deletion, and refreshed sidebar names without browser team persistence.
 - [x] Connect Create attachments to live multipart upload/delete; forward IDs to planning and runs; preserve design and avoid team-save endpoints. Nine attachment tests and 30 related tests pass.
 - [ ] Verify successful live upload → plan → run → delete after the deployed POST https://questmaster.tech/api/attachments stops returning 404. Current real-browser upload failure is visible and no mock replacement is used.
 - [x] Final production integration pass: separate Toyota entry, truthful live activity/reports/integration states, complete recommendation details, hidden mock sidebar teams and README. Live Sarah→Buy / Jordan→Return verified in browser; mock/live API tests pass (45 tests); automatic build/typecheck OK. Full lint has existing formatting debt; changed-file semantic lint passes.
