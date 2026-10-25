@@ -19,7 +19,6 @@ import {
   MOCK_LOG,
   MOCK_LOG_EVENTS,
   MOCK_METRICS,
-  MOCK_PARTIES,
   MOCK_REWARD,
   MOCK_REWARD_STRESSED,
   MOCK_RUN_HISTORY,
@@ -46,7 +45,7 @@ import type {
   SavedParty,
   TaskStatus,
 } from "./types";
-import type { PlanningInterface, SavedTeam, SaveTeamInput } from "./types";
+import type { PlanningInterface, SavedTeam, SavedTeamSummary, SaveTeamInput } from "./types";
 import { getPortrait, getSampleAgentsForTheme, getThemePortraitByIndex } from "@/lib/theme";
 
 const USE_MOCK = (import.meta.env["VITE_USE_MOCK_API"] ?? "false") === "true";
@@ -75,8 +74,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     const body: unknown = await res.json().catch(() => null);
     const error = body && typeof body === "object" && "error" in body ? body.error : null;
-    const message = error && typeof error === "object" && "message" in error
-      && typeof error.message === "string" && error.message.trim() ? error.message : undefined;
+    const candidate = error && typeof error === "object" && "message" in error ? error.message
+      : body && typeof body === "object" && "message" in body ? body.message
+      : body && typeof body === "object" && "detail" in body ? body.detail : undefined;
+    const message = typeof candidate === "string" && candidate.trim() ? candidate : undefined;
     throw new ApiRequestError(message ?? `API request failed: ${res.status} ${path}`, message);
   }
   return res.status === 204 ? undefined as T : (await res.json()) as T;
@@ -137,6 +138,7 @@ export function normalizeAgents(agents: Partial<AgentDefinition>[], theme: Plann
       budget: agent.budget ?? { max_llm_cost_usd: 0.05, max_llm_calls: 2 },
       estimated_cost_usd: agent.estimated_cost_usd ?? 0,
       portrait: agent.portrait?.trim() || getPortrait(theme, agent.id ?? `agent-${i + 1}`, name) || getThemePortraitByIndex(theme, i),
+      ...(agent.customized !== undefined ? { customized: agent.customized } : {}),
     };
   });
 }
@@ -235,47 +237,33 @@ export async function planTeam(goal: string, interfaceTheme: PlanningInterface =
   return { ...res, team: { ...res.team, agents: normalizeAgents(res.team.agents, interfaceTheme) } };
 }
 
-// Proposed external backend contract: docs/QuestMaster_TEAM_BACKEND_PROMPTS.md.
-// Mock teams are session-only, never presented as database persistence.
-const mockTeams = new Map<string, SavedTeam>();
-
-function normalizeSavedTeam(team: SavedTeam): SavedTeam {
-  return { ...team, agents: normalizeAgents(team.agents) };
-}
-
-export async function getSavedTeams(): Promise<SavedTeam[]> {
-  if (USE_MOCK) return [...mockTeams.values()];
-  const res = await request<{ teams: SavedTeam[] }>("/teams");
-  return res.teams.map(normalizeSavedTeam);
+// Tiger stores summaries separately from full team definitions.
+export async function getSavedTeams(): Promise<SavedParty[]> {
+  const res = await request<{ teams: SavedTeamSummary[] }>("/teams");
+  return res.teams.map(normalizeTeamSummary);
 }
 
 export async function getSavedTeam(id: string): Promise<SavedTeam> {
-  if (USE_MOCK) {
-    const team = mockTeams.get(id);
-    if (!team) throw new Error("Team not found.");
-    return structuredClone(team);
-  }
-  return normalizeSavedTeam((await request<{ team: SavedTeam }>(`/teams/${encodeURIComponent(id)}`)).team);
+  const res = await request<{ summary: SavedTeamSummary; team: SavedTeam; goal?: string }>(`/teams/${encodeURIComponent(id)}`);
+  return { ...res.team, id: res.summary.id, goal: res.goal ?? res.team.goal ?? res.summary.purpose,
+    agents: normalizeAgents(res.team.agents) };
 }
 
-export async function saveTeam(input: SaveTeamInput, savedId?: string): Promise<SavedTeam> {
-  const clean = { ...input, team: { ...input.team, agents: input.team.agents.map(({ portrait: _portrait, customized: _customized, ...agent }) => ({ ...agent, portrait: "" })) } };
-  if (USE_MOCK) {
-    const now = new Date().toISOString();
-    const team: SavedTeam = { ...clean.team, id: savedId ?? crypto.randomUUID(), goal: input.goal,
-      interface_theme: input.interface_theme, created_at: (savedId ? mockTeams.get(savedId)?.created_at : undefined) ?? now,
-      updated_at: now, last_run_status: "NEVER" };
-    mockTeams.set(team.id, structuredClone(team));
-    return normalizeSavedTeam(team);
-  }
-  const res = await request<{ team: SavedTeam }>(savedId ? `/teams/${encodeURIComponent(savedId)}` : "/teams", {
-    method: savedId ? "PUT" : "POST", body: JSON.stringify(clean),
+export async function saveTeam(input: SaveTeamInput): Promise<SavedParty> {
+  const team = { id: input.team.id, team_name: input.team.team_name, summary: input.team.summary,
+    agents: input.team.agents.map(({ portrait: _portrait, customized: _customized, ...agent }) => ({ ...agent, portrait: "" })) };
+  const res = await request<SavedTeamSummary>("/teams", {
+    method: "POST", body: JSON.stringify({ goal: input.goal, team }),
   });
-  return normalizeSavedTeam(res.team);
+  return normalizeTeamSummary(res);
+}
+
+function normalizeTeamSummary(summary: SavedTeamSummary): SavedParty {
+  const { member_ids, ...rest } = summary;
+  return { ...rest, memberIds: member_ids };
 }
 
 export async function deleteSavedTeam(id: string): Promise<void> {
-  if (USE_MOCK) { mockTeams.delete(id); return; }
   await request<void>(`/teams/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
@@ -451,6 +439,5 @@ export async function getLogEvents(): Promise<LogEvent[]> {
 }
 
 export async function getSavedParties(): Promise<SavedParty[]> {
-  if (USE_MOCK) { await mockDelay(); return MOCK_PARTIES; }
-  throw new ApiRequestError("Legacy saved parties are unavailable in live mode. Use saved teams.");
+  return getSavedTeams();
 }

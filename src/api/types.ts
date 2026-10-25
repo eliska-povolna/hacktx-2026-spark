@@ -68,16 +68,20 @@ export type PlanningInterface = "fantasy" | "professional" | "toyota";
 
 export interface SavedTeam extends TeamDefinition {
   goal: string;
-  interface_theme: PlanningInterface;
-  created_at: string;
-  updated_at: string;
-  last_run_status?: "COMPLETED" | "FAILED" | "RUNNING" | "NEVER";
 }
 
 export interface SaveTeamInput {
   team: TeamDefinition;
   goal: string;
-  interface_theme: PlanningInterface;
+}
+
+export interface SavedTeamSummary {
+  id: string;
+  name: string;
+  purpose: string;
+  member_ids: string[];
+  estimated_cost_usd: number;
+  last_run_status: SavedParty["last_run_status"];
 }
 
 export interface TaskDefinition {
