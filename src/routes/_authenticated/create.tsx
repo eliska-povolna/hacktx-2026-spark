@@ -315,7 +315,9 @@ function QuestForgePage() {
 
       {/* SECTION 3 — Character sheet */}
       {selected && (
-        <CharacterSheet agent={selected} onConfigure={() => setConfigureId(selected.id)} />
+        <section ref={sheetRef} className="scroll-mt-4">
+          <CharacterSheet agent={selected} onConfigure={() => setConfigureId(selected.id)} />
+        </section>
       )}
 
       {/* SECTIONS 4–6 — Outputs / Cost / Log */}
