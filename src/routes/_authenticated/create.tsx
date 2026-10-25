@@ -21,6 +21,13 @@ import { CharacterSheet } from "@/components/CharacterSheet";
 import { ConfigureAdventurerDialog } from "@/components/ConfigureAdventurerDialog";
 import { ExecutorBadge } from "@/components/ExecutorBadge";
 import { PORTRAITS } from "@/api/mockData";
+import {
+  getAgentsForTheme,
+  THEME_COPY,
+  TOYOTA_METRICS,
+  TOYOTA_REWARD,
+  useTheme,
+} from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/create")({
@@ -44,20 +51,14 @@ export const Route = createFileRoute("/_authenticated/create")({
   component: QuestForgePage,
 });
 
-const SAMPLE_QUEST =
-  "Study the recent guest feedback for the Moonlit Griffin Inn and recommend the three highest-impact improvements for service, pricing, and repeat visits.";
-
-const CONTEXT_CHIPS = [
-  { label: "Guest Feedback", icon: FileText },
-  { label: "Ledger Data", icon: BarChart3 },
-  { label: "Competitor Notes", icon: Trophy },
-  { label: "Guild Policies", icon: Shield },
-];
+const CHIP_ICONS = [FileText, BarChart3, Trophy, Shield, Link2];
 
 const TERMINAL_STATUSES = new Set(["COMPLETED", "FAILED", "BUDGET_LIMIT", "APPROVAL_REQUIRED"]);
 
 function QuestForgePage() {
-  const [quest, setQuest] = useState(SAMPLE_QUEST);
+  const { theme } = useTheme();
+  const copy = THEME_COPY[theme];
+  const [quest, setQuest] = useState(copy.sampleQuest);
   const [agents, setAgents] = useState<AgentDefinition[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [planning, setPlanning] = useState(false);
@@ -68,6 +69,13 @@ function QuestForgePage() {
 
   const selected = agents.find((a) => a.id === selectedId) ?? null;
   const configureAgent = agents.find((a) => a.id === configureId) ?? null;
+
+  // Switching themes is presentation-only, but the demo sample content follows
+  // the theme (Toyota shows its mobility decision sample).
+  useEffect(() => {
+    setQuest(THEME_COPY[theme].sampleQuest);
+    setAgents((prev) => getAgentsForTheme(theme, prev));
+  }, [theme]);
 
   useEffect(() => {
     return () => {
@@ -84,9 +92,10 @@ function QuestForgePage() {
     setRun(null);
     try {
       const res = await planTeam(quest);
-      setAgents(res.team.agents);
-      setSelectedId(res.team.agents[0]?.id ?? null);
-      toast.success("Your adventuring party has assembled.");
+      const themedAgents = getAgentsForTheme(theme, res.team.agents);
+      setAgents(themedAgents);
+      setSelectedId(themedAgents[0]?.id ?? null);
+      toast.success("Your team has assembled.");
     } catch {
       toast.error("The guild archives could not be reached.");
     } finally {
@@ -103,13 +112,18 @@ function QuestForgePage() {
       pollRef.current = setInterval(async () => {
         try {
           const next = await getRun(run_id);
+          // Toyota demo overlay: presentation-only mock result for this theme.
+          if (theme === "toyota" && next.status === "COMPLETED") {
+            next.reward = TOYOTA_REWARD;
+            next.metrics = TOYOTA_METRICS;
+          }
           setRun(next);
           if (TERMINAL_STATUSES.has(next.status)) {
             if (pollRef.current) clearInterval(pollRef.current);
             pollRef.current = null;
             setRunning(false);
             if (next.status === "COMPLETED") {
-              toast.success("Quest completed — rewards revealed.");
+              toast.success("Run completed — results revealed.");
             }
           }
         } catch {
@@ -139,10 +153,10 @@ function QuestForgePage() {
     const n = agents.length + 1;
     const custom: AgentDefinition = {
       id: `custom-${Date.now()}`,
-      name: `Adventurer ${n}`,
+      name: `Agent ${n}`,
       role: "Custom Specialist",
-      purpose: "A custom adventurer shaped by your quest.",
-      description: "A custom adventurer. Configure their role, skills, and guardrails.",
+      purpose: "A custom agent shaped by your goal.",
+      description: "A custom agent. Configure their role, skills, and guardrails.",
       skills: ["Custom"],
       instructions: "",
       allowed_tools: ["Scroll Archive"],
