@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { Eye, EyeOff, UserRound } from "lucide-react";
+import { Car, Eye, EyeOff, UserRound } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import { CrestLogo } from "@/components/CrestLogo";
 import { useAuth } from "@/lib/auth";
@@ -30,7 +31,7 @@ export const Route = createFileRoute("/")({
 
 function LoginPage() {
   const { login, continueAsDemo, isAuthenticated, isLoading } = useAuth();
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const copy = THEME_COPY[theme];
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -155,7 +156,7 @@ function LoginPage() {
           <hr className="divider-gold flex-1" />
         </div>
 
-        <button
+        <Button
           type="button"
           onClick={() => {
             continueAsDemo();
@@ -164,8 +165,16 @@ function LoginPage() {
           className="btn-secondary w-full px-4 py-2.5 text-sm"
         >
           <UserRound className="h-4 w-4" aria-hidden="true" />
-          {copy.auth.demoButton}
-        </button>
+          Continue with Demo
+        </Button>
+        <Button type="button" variant="outline" className="btn-outline-gold mt-3 w-full whitespace-normal px-4 py-2.5 text-sm !text-ink"
+          onClick={() => {
+            setTheme("toyota");
+            continueAsDemo();
+            navigate({ to: "/create" });
+          }}>
+          <Car className="h-4 w-4 shrink-0" aria-hidden="true" /> Launch Toyota Mobility Demo
+        </Button>
         <p className="mt-2 text-center text-[11px] italic text-ink-soft">
           No account needed — explore the full app as a guest.
         </p>

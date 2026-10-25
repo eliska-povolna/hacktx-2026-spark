@@ -137,6 +137,9 @@ export interface Run {
   metrics: RunMetrics;
   reward: QuestReward | null;
   log: QuestLogEntry[];
+  recommendation?: ToyotaRecommendation | null;
+  financial_context?: FinancialContext | null;
+  evaluators?: EvaluatorResult[];
 }
 
 export interface DemoCustomer {
@@ -157,6 +160,34 @@ export interface CreateRunInput {
 // The backend run response uses `recommendation` + `audit_events`; the client
 // normalizes them into the frontend `Run` shape (reward + log).
 
+export interface RecommendationOption {
+  id?: string;
+  label: string;
+  monthly_cost?: number | null;
+  three_year_cost?: number | null;
+  fit_score?: number | null;
+  safe_for_budget?: boolean | null;
+  tradeoffs?: string[];
+}
+
+export interface FinancialContext {
+  financial_stress?: string;
+  safe_mobility_budget?: number | null;
+  emergency_runway_months?: number | null;
+  monthly_free_cashflow?: number | null;
+  cash_reserve?: number | null;
+}
+
+export interface EvaluatorResult {
+  label?: string;
+  name?: string;
+  evaluator?: string;
+  evaluator_id?: string;
+  status: string;
+  message?: string;
+  details?: string;
+}
+
 export interface ToyotaRecommendation {
   recommended_action: string;
   confidence: number;
@@ -165,7 +196,9 @@ export interface ToyotaRecommendation {
   reasons: string[];
   assumptions?: string[];
   next_step?: { label: string; action_type: string };
-  options?: unknown[];
+  options?: RecommendationOption[];
+  financial_context?: FinancialContext | null;
+  evaluators?: EvaluatorResult[];
 }
 
 export interface AuditEvent {
@@ -173,6 +206,7 @@ export interface AuditEvent {
   timestamp: string;
   run_id?: string;
   agent_id?: string;
+  agent_name?: string;
   event_type?: string;
   executor_type?: ExecutorType;
   resource?: string;
@@ -191,9 +225,9 @@ export interface BackendRun {
   metrics?: Partial<RunMetrics>;
   recommendation?: ToyotaRecommendation | null;
   audit_events?: AuditEvent[];
-  financial_context?: unknown;
+  financial_context?: FinancialContext | null;
   outputs?: unknown[];
-  evaluators?: unknown[];
+  evaluators?: EvaluatorResult[];
 }
 
 export interface RunSummary {
@@ -203,16 +237,16 @@ export interface RunSummary {
   status: RunStatus;
   result: string;
   date: string;
-  duration_ms: number;
-  estimated_ai_cost_usd: number;
-  llm_calls: number;
-  llm_calls_avoided: number;
+  duration_ms: number | null;
+  estimated_ai_cost_usd: number | null;
+  llm_calls: number | null;
+  llm_calls_avoided: number | null;
 }
 
 export interface Integration {
   id: string;
   label: string;
-  status: "CONNECTED" | "HOSTED" | "AWAITING_BACKEND" | "AWAITING_DEPLOYMENT";
+  status: "CONNECTED" | "HOSTED" | "UNCONFIGURED" | "ERROR" | "AWAITING_BACKEND" | "AWAITING_DEPLOYMENT";
 }
 
 export interface DemoSession {
@@ -231,6 +265,8 @@ export interface LogEvent {
   category: "QUEST" | "PARTY" | "CODE" | "TOOL" | "LLM" | "SECURITY";
   message: string;
   actor: string;
+  event_type?: string;
+  run_id?: string;
 }
 
 export interface SavedParty {

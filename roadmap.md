@@ -36,12 +36,14 @@
 - [x] Live mode is the default and local .env (gitignored) uses the live API.
 
 ## Open
+- [x] Final production integration pass: separate Toyota entry, truthful live activity/reports/integration states, complete recommendation details, hidden mock sidebar teams and README. Live Sarah→Buy / Jordan→Return verified in browser; mock/live API tests pass (45 tests); automatic build/typecheck OK. Full lint has existing formatting debt; changed-file semantic lint passes.
+- [ ] Backend must expose GET /api/audit-events?limit=200 (currently 404) and add result/date/llm_calls_avoided to GET /api/runs. Frontend shows unavailable values and truthful errors until supplied.
 - [x] Live API polish: identity-stable themed jpg portraits for unfamiliar agents; removed Add Files and misleading backend stubs; HTTP 503 messages and fallback plans rejected; live lunar-beekeeping team verified in all styles, 22 tests passed.
 - [x] Generate from the active interface goal and keep generated configurations identical across styles.
 - [x] Prepare external saved-team CRUD, reopening by teamId, editing and explicit Save Team; no mock fallback in live mode.
 - [x] Supply backend implementation prompts in docs/QuestMaster_TEAM_BACKEND_PROMPTS.md; verify interface switching and session mock CRUD.
 - [ ] External backend must implement database team CRUD and atomic save-on-plan; live GET /api/teams returns 404. Backend owner must supply a real scoped session contract before authenticated persistence can be verified.
-- Eliška must add the frontend origins to the backend's CORS_ORIGINS — server currently allows only https://questmaster.tech; browser calls from Lovable are blocked:
+- Verify hosted frontend origins in backend CORS_ORIGINS (localhost live flow now succeeds; hosted origins were not rechecked in this pass):
   - https://hacktx-2026-spark.lovable.app (published/primary)
   - https://id-preview--1822652e-47c8-4da8-ba55-6c900a2db286.lovable.app (preview)
   - (optional, local dev) http://localhost:8080
