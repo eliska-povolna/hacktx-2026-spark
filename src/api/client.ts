@@ -118,23 +118,31 @@ export async function createDemoSession(): Promise<DemoSession> {
 
 // The backend never sends portraits or descriptions (API_SPEC §3.3):
 // fill the portrait from the local PORTRAITS set and fall back to `purpose`
-// for the description. Portraits are assigned by agent function (finance →
-// Maya, research → Rowan, analysis → Brann, decision → Selene, review → Odo)
-// so the same kind of agent always shows the same face in every theme;
-// unclassifiable agents keep stable identity hashing.
+// for the description. Portraits and persona names are assigned by agent
+// function (finance → Maya, research → Rowan, analysis → Brann, decision →
+// Selene, review → Odo, communication/support → Amara, engineering → Kenji)
+// so the same kind of agent always shows the same face and name in every
+// theme; unclassifiable agents keep stable identity hashing into the
+// remaining pool. The backend's descriptive name moves to the role when
+// the role is missing.
+const CANONICAL_NAMES = new Set(Object.values(FUNCTION_NAMES));
+
 export function normalizeAgents(agents: Partial<AgentDefinition>[], theme: PlanningInterface = "fantasy"): AgentDefinition[] {
   const withIds = agents.map((agent, i) => ({
     ...agent,
     id: agent.id ?? `agent-${i + 1}`,
     name: agent.name ?? `Agent ${i + 1}`,
   }));
-  const portraits = assignFunctionPortraits(theme, withIds);
+  const identities = assignFunctionIdentities(theme, withIds);
   return withIds.map((agent, i) => {
     const purpose = agent.purpose ?? "";
+    const identity = identities[i];
+    const personaName = identity ? FUNCTION_NAMES[identity.key as AgentFunctionKey] : undefined;
+    const keepName = CANONICAL_NAMES.has(agent.name);
     return {
       id: agent.id,
-      name: agent.name,
-      role: agent.role ?? "Specialist",
+      name: keepName ? agent.name : (personaName ?? agent.name),
+      role: agent.role ?? (keepName || !personaName ? "Specialist" : agent.name),
       purpose,
       description: agent.description || purpose,
       skills: agent.skills ?? [],
@@ -145,7 +153,7 @@ export function normalizeAgents(agents: Partial<AgentDefinition>[], theme: Plann
       model_policy: agent.model_policy ?? "auto",
       budget: agent.budget ?? { max_llm_cost_usd: 0.05, max_llm_calls: 2 },
       estimated_cost_usd: agent.estimated_cost_usd ?? 0,
-      portrait: agent.portrait?.trim() || portraits[i] || getThemePortraitByIndex(theme, i),
+      portrait: agent.portrait?.trim() || identity?.portrait || getThemePortraitByIndex(theme, i),
       ...(agent.customized !== undefined ? { customized: agent.customized } : {}),
     };
   });
