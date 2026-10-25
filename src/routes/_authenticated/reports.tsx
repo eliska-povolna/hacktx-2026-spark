@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { getRuns } from "@/api/client";
 import type { RunSummary } from "@/api/types";
-import { THEME_COPY, useTheme } from "@/lib/theme";
+import { adaptMockText, THEME_COPY, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/reports")({
@@ -55,10 +55,10 @@ function ReportsPage() {
                 <td className="max-w-64 px-3 py-3">
                   <div className="flex items-start gap-2">
                     <Scroll className="mt-0.5 h-4 w-4 shrink-0 text-gold-dim" />
-                    <span className="font-semibold">{run.goal}</span>
+                    <span className="font-semibold">{adaptMockText(theme, run.goal)}</span>
                   </div>
                 </td>
-                <td className="px-3 py-3 text-ink-soft">{run.team_name}</td>
+                <td className="px-3 py-3 text-ink-soft">{adaptMockText(theme, run.team_name)}</td>
                 <td className="px-3 py-3 text-ink-soft">{run.date}</td>
                 <td className="px-3 py-3">
                   <span
