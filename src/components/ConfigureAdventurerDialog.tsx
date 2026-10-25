@@ -45,7 +45,7 @@ function ListEditor({
           </span>
         ))}
       </div>
-      <div className="mt-1.5 flex gap-2">
+      <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -69,7 +69,7 @@ function ListEditor({
               setDraft("");
             }
           }}
-          className="btn-outline-gold shrink-0 px-3 text-xs !text-ink"
+          className="btn-outline-gold shrink-0 px-3 py-2 text-xs !text-ink sm:py-0"
         >
           <Plus className="h-3.5 w-3.5" /> Add
         </button>
@@ -87,14 +87,28 @@ export function ConfigureAdventurerDialog({ agent, onClose, onSave, onRemove }: 
     setDraft(agent);
   }, [agent]);
 
+  // Escape closes the dialog (accessible modal behavior).
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
   if (!draft) return null;
 
   const update = (patch: Partial<AgentDefinition>) => setDraft({ ...draft, ...patch });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-stretch justify-center sm:items-center sm:p-4">
       <div className="absolute inset-0 bg-black/70" onClick={onClose} />
-      <div className="parchment-panel relative max-h-[85vh] w-full max-w-2xl overflow-y-auto p-6">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={copy.configureTitle}
+        className="parchment-panel relative max-h-dvh w-full max-w-2xl overflow-y-auto p-4 max-sm:rounded-none sm:max-h-[85vh] sm:p-6"
+      >
         <div className="mb-4 flex items-start justify-between">
           <div>
             <h3 className="font-display text-xl font-bold text-ink">{copy.configureTitle}</h3>
@@ -133,7 +147,7 @@ export function ConfigureAdventurerDialog({ agent, onClose, onSave, onRemove }: 
               className={fieldClass}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className={labelClass}>Budget ($ / run)</label>
               <input

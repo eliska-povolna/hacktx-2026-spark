@@ -11,13 +11,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/teams")({
   head: () => ({
     meta: [
-      { title: "Adventuring Parties — QuestMaster" },
+      { title: "Teams — QuestMaster" },
       {
         name: "description",
-        content: "Manage your saved QuestMaster adventuring parties.",
+        content: "Manage your saved QuestMaster agent teams.",
       },
-      { property: "og:title", content: "Adventuring Parties — QuestMaster" },
-      { property: "og:description", content: "Manage your saved QuestMaster adventuring parties." },
+      { property: "og:title", content: "Teams — QuestMaster" },
+      { property: "og:description", content: "Manage your saved QuestMaster agent teams." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -51,7 +51,7 @@ function TeamsPage() {
 
   const remove = (party: SavedParty) => {
     setParties((prev) => prev.filter((p) => p.id !== party.id));
-    toast.success(`${party.name} disbanded.`);
+    toast.success(copy.toastTeamRemoved(party.name));
   };
 
   return (
@@ -102,10 +102,10 @@ function TeamsPage() {
 
             <div className="mt-auto flex gap-2">
               <button
-                onClick={() => toast.info("Opening parties in the Forge arrives with the backend.")}
+                onClick={() => toast.info(copy.openTeamHint)}
                 className="btn-crimson flex-1 px-3 py-1.5 text-xs"
               >
-                <DoorOpen className="h-3.5 w-3.5" /> Open Party
+                <DoorOpen className="h-3.5 w-3.5" /> {copy.openTeam}
               </button>
               <button
                 onClick={() => duplicate(party)}

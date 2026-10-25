@@ -3,18 +3,19 @@ import { useEffect, useState, type FormEvent } from "react";
 
 import { CrestLogo } from "@/components/CrestLogo";
 import { useAuth } from "@/lib/auth";
+import { DEMO_AUTH_NOTE, THEME_COPY, useTheme } from "@/lib/theme";
 import bgRealm from "@/assets/bg-realm.jpg";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Create Your Chronicle — QuestMaster" },
+      { title: "Sign Up — QuestMaster" },
       {
         name: "description",
-        content: "Join the QuestMaster guild and start assembling AI adventuring parties.",
+        content: "Join QuestMaster and start assembling AI agent teams.",
       },
-      { property: "og:title", content: "Create Your Chronicle — QuestMaster" },
-      { property: "og:description", content: "Join the QuestMaster guild." },
+      { property: "og:title", content: "Sign Up — QuestMaster" },
+      { property: "og:description", content: "Join QuestMaster." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -24,6 +25,8 @@ export const Route = createFileRoute("/signup")({
 
 function SignupPage() {
   const { signup, isAuthenticated, isLoading } = useAuth();
+  const { theme } = useTheme();
+  const copy = THEME_COPY[theme];
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -71,15 +74,15 @@ function SignupPage() {
         alt=""
         width={1920}
         height={1088}
-        className="fixed inset-0 -z-10 h-full w-full object-cover"
+        className="fantasy-only fixed inset-0 -z-10 h-full w-full object-cover"
       />
-      <div className="fixed inset-0 -z-10 bg-black/55" />
+      <div className="fantasy-only fixed inset-0 -z-10 bg-black/55" />
 
       <div className="parchment-panel w-full max-w-md p-8">
         <div className="mb-6 flex flex-col items-center text-center">
           <CrestLogo className="mb-3 h-14 w-14 text-gold-dim" />
-          <h1 className="font-display text-2xl font-bold text-ink">Create Your Chronicle</h1>
-          <p className="mt-1 text-sm text-ink-soft">Every legend begins with a first page.</p>
+          <h1 className="font-display text-2xl font-bold text-ink">{copy.auth.signUpTitle}</h1>
+          <p className="mt-1 text-sm text-ink-soft">{copy.auth.signUpSub}</p>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
@@ -138,18 +141,19 @@ function SignupPage() {
           )}
 
           <button type="submit" disabled={pending} className="btn-crimson w-full px-4 py-2.5 text-sm">
-            {pending ? "Inscribing your name..." : "Create Your Chronicle"}
+            {pending ? copy.auth.signUpPending : copy.auth.signUpButton}
           </button>
         </form>
 
         <hr className="divider-gold my-5" />
 
         <p className="text-center text-sm text-ink-soft">
-          Already a Quest Master?{" "}
+          Already have an account?{" "}
           <Link to="/" className="font-semibold text-crimson hover:underline">
-            Enter the Guild
+            {copy.auth.signInButton}
           </Link>
         </p>
+        <p className="mt-3 text-center text-[11px] italic text-ink-soft">{DEMO_AUTH_NOTE}</p>
       </div>
     </div>
   );

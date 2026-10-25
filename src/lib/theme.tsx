@@ -31,6 +31,8 @@ import toyotaKenji from "@/assets/toyota-kenji.jpg";
 
 export interface ThemeCopy {
   brandName: string;
+  /** Shorter label for the mobile top bar. */
+  brandShort: string;
   nav: {
     create: string;
     createSub: string;
@@ -44,6 +46,8 @@ export interface ThemeCopy {
     settingsSub: string;
   };
   savedParties: string;
+  /** Neutral saved-team examples shown in the sidebar. */
+  savedTeamNames: string[];
   goalTitle: string;
   buildButton: string;
   teamTitle: string;
@@ -54,6 +58,8 @@ export interface ThemeCopy {
   removeAgent: string;
   outputs: string;
   outputsBadge: string;
+  /** Badge shown on the outputs panel when the live backend produced it. */
+  outputsBadgeLive: string;
   cost: string;
   log: string;
   ready: string;
@@ -62,6 +68,26 @@ export interface ThemeCopy {
   contextChips: string[];
   brandTagline: string;
   quote: string;
+  auth: {
+    signInTitle: string;
+    signInSub: string;
+    signInButton: string;
+    signInPending: string;
+    signUpTitle: string;
+    signUpSub: string;
+    signUpButton: string;
+    signUpPending: string;
+    resetTitle: string;
+    resetSub: string;
+  };
+  toastPlanError: string;
+  toastAgentRemoved: (name: string) => string;
+  toastTeamRemoved: (name: string) => string;
+  openTeam: string;
+  openTeamHint: string;
+  reportGoalCol: string;
+  reportTeamCol: string;
+  logsEmpty: string;
   pages: {
     teamsTitle: string;
     teamsSub: string;
@@ -74,9 +100,13 @@ export interface ThemeCopy {
   };
 }
 
+/** Shown on every auth screen — this build uses demo-only browser auth. */
+export const DEMO_AUTH_NOTE = "Demo sign-in — accounts are stored only in this browser.";
+
 export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
   fantasy: {
     brandName: "QuestMaster",
+    brandShort: "QuestMaster",
     nav: {
       create: "Quest Forge",
       createSub: "Create new quests",
@@ -90,6 +120,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
       settingsSub: "Settings & integrations",
     },
     savedParties: "Saved Parties",
+    savedTeamNames: ["Merchant Insight Party", "Support Guild", "Market Watchers"],
     goalTitle: "What quest do you seek?",
     buildButton: "Assemble My Party",
     teamTitle: "Meet Your Adventurers",
@@ -100,6 +131,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
     removeAgent: "Remove adventurer",
     outputs: "Quest Rewards",
     outputsBadge: "Mock Output",
+    outputsBadgeLive: "Live Result",
     cost: "Mana & Cost",
     log: "Quest Log",
     ready: "Ready",
@@ -109,6 +141,26 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
     contextChips: ["Guest Feedback", "Ledger Data", "Competitor Notes", "Guild Policies"],
     brandTagline: "The best agent platform\nknows when not to use an agent.",
     quote: "“Good questions lead to greater journeys.”",
+    auth: {
+      signInTitle: "Welcome back, Quest Master",
+      signInSub: "Your party awaits.",
+      signInButton: "Enter the Guild",
+      signInPending: "Opening the gates...",
+      signUpTitle: "Create Your Chronicle",
+      signUpSub: "Every legend begins with a first page.",
+      signUpButton: "Create Your Chronicle",
+      signUpPending: "Inscribing your name...",
+      resetTitle: "Recover Your Seal",
+      resetSub: "Set a new password for your guild account.",
+    },
+    toastPlanError: "The guild archives could not be reached.",
+    toastAgentRemoved: (name) => `${name} has been dismissed from the party.`,
+    toastTeamRemoved: (name) => `${name} disbanded.`,
+    openTeam: "Open Party",
+    openTeamHint: "Opening parties in the Forge arrives with the backend.",
+    reportGoalCol: "Quest",
+    reportTeamCol: "Party",
+    logsEmpty: "No entries in this chapter yet.",
     pages: {
       teamsTitle: "Adventuring Parties",
       teamsSub: "Your saved bands of adventurers, ready for the next quest.",
@@ -122,6 +174,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
   },
   professional: {
     brandName: "QuestMaster",
+    brandShort: "QuestMaster",
     nav: {
       create: "Create",
       createSub: "Start a new analysis",
@@ -135,6 +188,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
       settingsSub: "Settings & integrations",
     },
     savedParties: "Saved Teams",
+    savedTeamNames: ["Customer Insight Team", "Support Ops Team", "Market Watchers"],
     goalTitle: "What do you want to accomplish?",
     buildButton: "Build My Team",
     teamTitle: "Your AI Team",
@@ -145,6 +199,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
     removeAgent: "Remove agent",
     outputs: "Outputs",
     outputsBadge: "Mock Output",
+    outputsBadgeLive: "Live Result",
     cost: "Cost & Efficiency",
     log: "Execution Log",
     ready: "Ready",
@@ -154,6 +209,26 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
     contextChips: ["Customer Feedback", "Financial Data", "Competitor Notes", "Policies"],
     brandTagline: "The best agent platform\nknows when not to use an agent.",
     quote: "“Good questions lead to greater journeys.”",
+    auth: {
+      signInTitle: "Welcome back",
+      signInSub: "Sign in to your workspace.",
+      signInButton: "Sign In",
+      signInPending: "Signing in...",
+      signUpTitle: "Create your account",
+      signUpSub: "Start building your AI team.",
+      signUpButton: "Create Account",
+      signUpPending: "Creating account...",
+      resetTitle: "Reset password",
+      resetSub: "Set a new password for your account.",
+    },
+    toastPlanError: "The planning service could not be reached.",
+    toastAgentRemoved: (name) => `${name} has been removed from the team.`,
+    toastTeamRemoved: (name) => `${name} deleted.`,
+    openTeam: "Open Team",
+    openTeamHint: "Opening teams in the editor arrives with the backend.",
+    reportGoalCol: "Goal",
+    reportTeamCol: "Team",
+    logsEmpty: "No activity yet.",
     pages: {
       teamsTitle: "Teams",
       teamsSub: "Your saved agent teams, ready for the next task.",
@@ -167,6 +242,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
   },
   toyota: {
     brandName: "Toyota Mobility Studio",
+    brandShort: "Mobility Studio",
     nav: {
       create: "Mobility Studio",
       createSub: "Start a new decision",
@@ -180,6 +256,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
       settingsSub: "Settings & integrations",
     },
     savedParties: "Saved Teams",
+    savedTeamNames: ["Mobility Decision Team", "Customer Support Team", "Market Analysis Team"],
     goalTitle: "What decision can we help with?",
     buildButton: "Build Decision Team",
     teamTitle: "Your Decision Team",
@@ -190,6 +267,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
     removeAgent: "Remove specialist",
     outputs: "Recommendation",
     outputsBadge: "Demo Recommendation",
+    outputsBadgeLive: "Live Recommendation",
     cost: "Efficiency",
     log: "Decision Trace",
     ready: "Ready",
@@ -199,6 +277,26 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
     contextChips: ["Customer Profile", "Vehicle Data", "Contract", "Usage", "Financial Context"],
     brandTagline: "The best agent platform\nknows when not to use an agent.",
     quote: "“Good questions lead to greater journeys.”",
+    auth: {
+      signInTitle: "Welcome back",
+      signInSub: "Sign in to Toyota Mobility Studio.",
+      signInButton: "Sign In",
+      signInPending: "Signing in...",
+      signUpTitle: "Create your account",
+      signUpSub: "Set up your decision workspace.",
+      signUpButton: "Create Account",
+      signUpPending: "Creating account...",
+      resetTitle: "Reset password",
+      resetSub: "Set a new password for your account.",
+    },
+    toastPlanError: "The planning service could not be reached.",
+    toastAgentRemoved: (name) => `${name} has been removed from the decision team.`,
+    toastTeamRemoved: (name) => `${name} deleted.`,
+    openTeam: "Open Team",
+    openTeamHint: "Opening teams in the studio arrives with the backend.",
+    reportGoalCol: "Decision",
+    reportTeamCol: "Decision Team",
+    logsEmpty: "No activity yet.",
     pages: {
       teamsTitle: "Agent Teams",
       teamsSub: "Your saved specialist teams, ready for the next decision.",

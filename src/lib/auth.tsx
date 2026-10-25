@@ -1,8 +1,12 @@
-// Client-side auth for the QuestMaster hackathon frontend.
+// Client-side DEMO auth for the QuestMaster hackathon frontend.
 // The project is frontend-only (see AGENTS.md): no Lovable Cloud, no real
-// backend. Accounts and sessions live in localStorage so the full
+// backend. Accounts and sessions live in this browser's storage so the full
 // login/signup/reset/logout flow works in the demo. When the real backend
 // ships, swap these functions for its session endpoints.
+//
+// Demo safety: passwords are NEVER stored in plaintext — only a salted
+// SHA-256 hash (with a clearly-marked non-cryptographic fallback for
+// non-secure contexts). Sessions carry only a lightweight user identifier.
 
 import {
   createContext,
@@ -22,7 +26,7 @@ export interface AuthUser {
 interface StoredAccount {
   name: string;
   email: string;
-  password: string;
+  passHash: string;
 }
 
 interface AuthContextValue {
@@ -35,14 +39,44 @@ interface AuthContextValue {
   resetPassword: (email: string, newPassword: string) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+// Preserve context identity across hot updates of this module (same pattern
+// as theme-context.tsx) — otherwise mounted consumers lose the provider and
+// crash with "useAuth must be used within AuthProvider" after each edit.
+const AuthContext = import.meta.hot?.data?.["authContext"] as
+  ReturnType<typeof createContext<AuthContextValue | null>> | undefined
+  ?? createContext<AuthContextValue | null>(null);
+
+if (import.meta.hot?.data) import.meta.hot.data["authContext"] = AuthContext;
 
 const ACCOUNTS_KEY = "questmaster.accounts";
 const SESSION_KEY = "questmaster.session";
 
+// Salted SHA-256 via Web Crypto; falls back to a marked FNV-1a hash where
+// crypto.subtle is unavailable (non-secure contexts). Demo-only either way.
+export async function hashPassword(password: string): Promise<string> {
+  const salted = `questmaster-demo:${password}`;
+  try {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salted));
+    return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < salted.length; i++) {
+      h ^= salted.charCodeAt(i);
+      h = Math.imul(h, 0x01000193);
+    }
+    return `fnv1a-${(h >>> 0).toString(16)}`;
+  }
+}
+
 function readAccounts(): StoredAccount[] {
   try {
-    return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) ?? "[]") as StoredAccount[];
+    const raw = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) ?? "[]") as unknown[];
+    // Drop any legacy plaintext-password entries instead of migrating them:
+    // demo accounts are disposable, and plaintext must not linger in storage.
+    return raw.filter(
+      (a): a is StoredAccount =>
+        typeof a === "object" && a !== null && typeof (a as StoredAccount).passHash === "string",
+    );
   } catch {
     return [];
   }
@@ -83,10 +117,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (email: string, password: string, remember: boolean) => {
       await new Promise((r) => setTimeout(r, 500));
+      const passHash = await hashPassword(password);
       const account = readAccounts().find(
         (a) => a.email.toLowerCase() === email.toLowerCase(),
       );
-      if (!account || account.password !== password) {
+      if (!account || account.passHash !== passHash) {
         throw new Error("Invalid email or password.");
       }
       const next: AuthUser = { name: account.name, email: account.email, title: "Quest Master" };
@@ -103,7 +138,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (accounts.some((a) => a.email.toLowerCase() === email.toLowerCase())) {
         throw new Error("An account with this email already exists.");
       }
-      accounts.push({ name, email, password });
+      const passHash = await hashPassword(password);
+      accounts.push({ name, email, passHash });
       writeAccounts(accounts);
       const next: AuthUser = { name, email, title: "Quest Master" };
       persistSession(next, true);
@@ -124,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!account) {
       throw new Error("No account found with this email.");
     }
-    account.password = newPassword;
+    account.passHash = await hashPassword(newPassword);
     writeAccounts(accounts);
   }, []);
 

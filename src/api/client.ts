@@ -1,8 +1,9 @@
 // Centralized QuestMaster API service layer.
 // Components must call ONLY these functions — never fetch() directly.
 //
-// Mock mode is on by default. To switch to the real backend:
-//   VITE_USE_MOCK_API=false
+// Live mode is the default (the tracked .env was removed — see .env.example).
+// To use built-in demo data instead, create a local .env with:
+//   VITE_USE_MOCK_API=true
 //   VITE_API_BASE_URL=https://questmaster.tech/api
 //
 // The real backend contract lives in docs/QuestMaster_API_SPEC.md.
@@ -45,7 +46,7 @@ import type {
   TaskStatus,
 } from "./types";
 
-const USE_MOCK = (import.meta.env["VITE_USE_MOCK_API"] ?? "true") !== "false";
+const USE_MOCK = (import.meta.env["VITE_USE_MOCK_API"] ?? "false") === "true";
 const API_BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "https://questmaster.tech/api";
 
 function delay(ms: number) {

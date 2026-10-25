@@ -29,11 +29,7 @@ const NAV_ICONS = {
   settings: Settings,
 } as const;
 
-const SAVED_PARTIES = [
-  { name: "Merchant Insight Party", icon: Gem },
-  { name: "Support Guild", icon: Users },
-  { name: "Market Watchers", icon: Coins },
-];
+const SAVED_PARTY_ICONS = [Gem, Users, Coins];
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
@@ -102,17 +98,20 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gold-dim">
             {copy.savedParties}
           </div>
-          {SAVED_PARTIES.map((party) => (
-            <Link
-              key={party.name}
-              to="/teams"
-              onClick={onNavigate}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-foreground/75 transition-colors hover:bg-sidebar-accent"
-            >
-              <party.icon className="h-4 w-4 text-gold-dim" />
-              {party.name}
-            </Link>
-          ))}
+          {copy.savedTeamNames.map((name, i) => {
+            const PartyIcon = SAVED_PARTY_ICONS[i % SAVED_PARTY_ICONS.length] ?? Gem;
+            return (
+              <Link
+                key={name}
+                to="/teams"
+                onClick={onNavigate}
+                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-foreground/75 transition-colors hover:bg-sidebar-accent"
+              >
+                <PartyIcon className="h-4 w-4 text-gold-dim" />
+                {name}
+              </Link>
+            );
+          })}
         </div>
       </nav>
 
@@ -167,9 +166,9 @@ export function AppSidebar() {
         >
           <Menu className="h-5 w-5" />
         </button>
-        <CrestLogo className="h-7 w-7 text-gold" />
-        <span className="font-display text-lg font-bold text-gold-bright">
-          {THEME_COPY[theme].brandName}
+        <CrestLogo className="h-7 w-7 shrink-0 text-gold" />
+        <span className="min-w-0 flex-1 truncate font-display text-lg font-bold text-gold-bright">
+          {THEME_COPY[theme].brandShort}
         </span>
       </div>
 

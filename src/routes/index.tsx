@@ -4,21 +4,22 @@ import { Eye, EyeOff } from "lucide-react";
 
 import { CrestLogo } from "@/components/CrestLogo";
 import { useAuth } from "@/lib/auth";
+import { DEMO_AUTH_NOTE, THEME_COPY, useTheme } from "@/lib/theme";
 import bgRealm from "@/assets/bg-realm.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Enter the Guild — QuestMaster" },
+      { title: "Sign In — QuestMaster" },
       {
         name: "description",
         content:
-          "Sign in to QuestMaster, the fantasy agent platform that assembles AI adventuring parties for your quests.",
+          "Sign in to QuestMaster, the agent platform that assembles AI teams for your goals.",
       },
-      { property: "og:title", content: "Enter the Guild — QuestMaster" },
+      { property: "og:title", content: "Sign In — QuestMaster" },
       {
         property: "og:description",
-        content: "Welcome back, Quest Master. Your party awaits.",
+        content: "Welcome back. Your team awaits.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -29,6 +30,8 @@ export const Route = createFileRoute("/")({
 
 function LoginPage() {
   const { login, isAuthenticated, isLoading } = useAuth();
+  const { theme } = useTheme();
+  const copy = THEME_COPY[theme];
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,21 +67,21 @@ function LoginPage() {
         alt=""
         width={1920}
         height={1088}
-        className="fixed inset-0 -z-10 h-full w-full object-cover"
+        className="fantasy-only fixed inset-0 -z-10 h-full w-full object-cover"
       />
-      <div className="fixed inset-0 -z-10 bg-black/55" />
+      <div className="fantasy-only fixed inset-0 -z-10 bg-black/55" />
 
       <div className="parchment-panel w-full max-w-md p-8">
         <div className="mb-6 flex flex-col items-center text-center">
           <CrestLogo className="mb-3 h-16 w-16 text-gold-dim" />
-          <h1 className="font-display text-3xl font-bold text-ink">QuestMaster</h1>
+          <h1 className="font-display text-3xl font-bold text-ink">{copy.brandName}</h1>
           <p className="mt-1 text-xs italic text-ink-soft">
             The best agent platform knows when not to use an agent.
           </p>
         </div>
 
-        <h2 className="font-display text-xl font-semibold text-ink">Welcome back, Quest Master</h2>
-        <p className="mb-5 text-sm text-ink-soft">Your party awaits.</p>
+        <h2 className="font-display text-xl font-semibold text-ink">{copy.auth.signInTitle}</h2>
+        <p className="mb-5 text-sm text-ink-soft">{copy.auth.signInSub}</p>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
@@ -142,18 +145,19 @@ function LoginPage() {
           )}
 
           <button type="submit" disabled={pending} className="btn-crimson w-full px-4 py-2.5 text-sm">
-            {pending ? "Opening the gates..." : "Enter the Guild"}
+            {pending ? copy.auth.signInPending : copy.auth.signInButton}
           </button>
         </form>
 
         <hr className="divider-gold my-5" />
 
         <p className="text-center text-sm text-ink-soft">
-          New to the guild?{" "}
+          New here?{" "}
           <Link to="/signup" className="font-semibold text-crimson hover:underline">
-            Create Your Chronicle
+            {copy.auth.signUpButton}
           </Link>
         </p>
+        <p className="mt-3 text-center text-[11px] italic text-ink-soft">{DEMO_AUTH_NOTE}</p>
       </div>
     </div>
   );

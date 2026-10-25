@@ -212,9 +212,9 @@
   /* Success green */
   --forest: oklch(0.55 0.13 155);
 
-  /* Modern sans-serif typography */
-  --font-display: "Alegreya Sans", "Segoe UI", sans-serif;
-  --font-body: "Alegreya Sans", "Segoe UI", sans-serif;
+  /* Clean system/enterprise sans-serif typography */
+  --font-display: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-body: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 /* ============ TOYOTA THEME — automotive / financial services ============ */
@@ -281,9 +281,9 @@
   /* Success green */
   --forest: oklch(0.55 0.13 155);
 
-  /* Clean sans-serif typography */
-  --font-display: "Alegreya Sans", "Segoe UI", sans-serif;
-  --font-body: "Alegreya Sans", "Segoe UI", sans-serif;
+  /* Clean system/enterprise sans-serif typography */
+  --font-display: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-body: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 /* ---- Shared non-fantasy surface overrides ---- */

@@ -13,9 +13,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
-      { title: "Sanctum — QuestMaster" },
+      { title: "Settings — QuestMaster" },
       { name: "description", content: "QuestMaster settings, profile, and integrations." },
-      { property: "og:title", content: "Sanctum — QuestMaster" },
+      { property: "og:title", content: "Settings — QuestMaster" },
       { property: "og:description", content: "QuestMaster settings, profile, and integrations." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -107,7 +107,9 @@ function SettingsPage() {
         <dl className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
             <dt className="text-ink-soft">API Status</dt>
-            <dd className="font-semibold text-forest">Operational (mock)</dd>
+            <dd className="font-semibold text-forest">
+              {isMockMode() ? "Operational (mock)" : "Live backend"}
+            </dd>
           </div>
           <div className="flex items-center justify-between">
             <dt className="text-ink-soft">Mock Mode</dt>
