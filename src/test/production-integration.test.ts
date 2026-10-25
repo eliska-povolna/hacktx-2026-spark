@@ -13,12 +13,19 @@ describe("live data must never silently fall back", () => {
   });
   it("live Activity requests the audit endpoint and preserves backend identity", async () => {
     vi.stubEnv("VITE_USE_MOCK_API", "false");
-    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ audit_events: [{ id: "audit-real", timestamp: "2026-10-25T07:00:00Z", event_type: "TOOL_CALL", executor_type: "TOOL", agent_name: "Maya", run_id: "run-real", message: "Nessie responded" }] })));
+    // Backend API_SPEC returns `{ events: [...] }` (not audit_events).
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ events: [{ id: "audit-real", timestamp: "2026-10-25T07:00:00Z", event_type: "TOOL_CALL", executor_type: "TOOL", agent_name: "Maya", run_id: "run-real", message: "Nessie responded" }] })));
     vi.stubGlobal("fetch", fetcher);
     const api = await import("@/api/client");
     const events = await api.getLogEvents();
     expect(fetcher.mock.calls[0]?.[0]).toBe("https://questmaster.tech/api/audit-events?limit=200");
     expect(events[0]).toMatchObject({ id: "audit-real", category: "TOOL", actor: "Maya", run_id: "run-real", timestamp: "2026-10-25T07:00:00Z" });
+  });
+  it("accepts legacy audit_events key for Activity", async () => {
+    vi.stubEnv("VITE_USE_MOCK_API", "false");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ audit_events: [{ id: "legacy", timestamp: "2026-10-25T07:00:00Z", event_type: "TOOL_CALL", executor_type: "TOOL", message: "ok" }] }))));
+    const api = await import("@/api/client");
+    expect((await api.getLogEvents())[0]?.id).toBe("legacy");
   });
   it("legacy parties read the live teams endpoint and map member IDs", async () => {
     vi.stubEnv("VITE_USE_MOCK_API", "false");

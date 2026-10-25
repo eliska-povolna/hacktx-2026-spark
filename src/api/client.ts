@@ -432,11 +432,25 @@ function finiteNumber(value: unknown): number | null {
 
 export function normalizeAuditEvent(event: AuditEvent, index = 0): LogEvent {
   const type = event.event_type ?? "";
-  const category = /permission|security|data.?minimization|access|guardrail/i.test(type)
-    ? "SECURITY" : /run_/i.test(type) ? "QUEST" : event.executor_type ?? "QUEST";
-  return { id: event.id ?? `event-${index}`, timestamp: event.timestamp ?? "", category,
-    message: event.message ?? type, actor: event.agent_name ?? event.agent_id ?? "Platform",
-    event_type: type, ...(event.run_id ? { run_id: event.run_id } : {}) };
+  let category: LogEvent["category"] = "QUEST";
+  if (/permission|security|data.?minimization|access|guardrail/i.test(type)) {
+    category = "SECURITY";
+  } else if (/run_/i.test(type)) {
+    category = "QUEST";
+  } else if (event.executor_type === "CODE" || event.executor_type === "TOOL" || event.executor_type === "LLM") {
+    category = event.executor_type;
+  } else if (/team|party|agent_/i.test(type)) {
+    category = "PARTY";
+  }
+  return {
+    id: event.id ?? `event-${index}`,
+    timestamp: event.timestamp ?? "",
+    category,
+    message: event.message ?? type,
+    actor: event.agent_name ?? event.agent_id ?? "Platform",
+    event_type: type,
+    ...(event.run_id ? { run_id: event.run_id } : {}),
+  };
 }
 
 export async function getIntegrations(): Promise<Integration[]> {
@@ -450,8 +464,13 @@ export async function getIntegrations(): Promise<Integration[]> {
 
 export async function getLogEvents(): Promise<LogEvent[]> {
   if (USE_MOCK) { await mockDelay(); return MOCK_LOG_EVENTS; }
-  const res = await request<{ audit_events: AuditEvent[] }>("/audit-events?limit=200");
-  return res.audit_events.map(normalizeAuditEvent);
+  // Backend contract (API_SPEC): { events: AuditEvent[] }
+  // Accept legacy `audit_events` key for older mocks/deployments.
+  const res = await request<{ events?: AuditEvent[]; audit_events?: AuditEvent[] }>(
+    "/audit-events?limit=200",
+  );
+  const raw = res.events ?? res.audit_events ?? [];
+  return raw.map((event, index) => normalizeAuditEvent(event, index));
 }
 
 export async function getSavedParties(): Promise<SavedParty[]> {
