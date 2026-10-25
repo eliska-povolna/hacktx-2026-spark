@@ -106,7 +106,7 @@ function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={fieldClass}
-              placeholder="you@guild.example"
+              placeholder={copy.emailPlaceholder}
             />
           </div>
           <div>

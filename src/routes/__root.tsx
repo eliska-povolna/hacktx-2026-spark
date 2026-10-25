@@ -37,7 +37,7 @@ function NotFoundComponent() {
         </p>
         <div className="mt-6">
           <Link to="/" className="btn-crimson px-4 py-2 text-sm">
-            Return to the Guild
+            Return Home
           </Link>
         </div>
       </div>

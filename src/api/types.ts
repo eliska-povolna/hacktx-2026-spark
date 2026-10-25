@@ -45,6 +45,9 @@ export interface AgentDefinition {
   budget: BudgetPolicy;
   estimated_cost_usd: number;
   portrait: string;
+  /** Set when the user explicitly edited this agent — theme overlays then
+   *  leave their role/skills/tools/scopes untouched (portrait still swaps). */
+  customized?: boolean;
 }
 
 export interface TeamDefinition {

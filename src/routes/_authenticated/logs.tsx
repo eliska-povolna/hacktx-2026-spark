@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { getLogEvents } from "@/api/client";
 import type { LogEvent } from "@/api/types";
-import { THEME_COPY, useTheme } from "@/lib/theme";
+import { adaptMockText, THEME_COPY, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/logs")({
@@ -89,8 +89,8 @@ function LogsPage() {
                 {event.category}
               </span>
               <span className="w-full min-w-0 text-ink sm:w-auto sm:flex-1">
-                {event.message}
-                <span className="ml-1.5 text-xs italic text-ink-soft">— {event.actor}</span>
+                {adaptMockText(theme, event.message)}
+                <span className="ml-1.5 text-xs italic text-ink-soft">— {adaptMockText(theme, event.actor)}</span>
               </span>
             </li>
           ))}

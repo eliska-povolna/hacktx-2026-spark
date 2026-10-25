@@ -17,6 +17,15 @@
   terminal-state messaging; removed fake "View Details" control; mock/live labels follow
   VITE_USE_MOCK_API; neutral page titles
 
+- Final QA pass (2026-10-25): Toyota mock recommendation respects the selected customer
+  (stable → Buy, stressed → Return); Professional/Toyota agent presentation overlays
+  (roles, tools, least-privilege scopes) applied only to untouched agents — user edits
+  mark the agent customized and win; sample goal follows the theme only while untouched;
+  mock Teams/Reports/Logs text adapted per theme via adaptMockText; themed toasts,
+  email placeholders and profile titles; "Task Execution Mix" label; Open Team navigates
+  to /create; SaaS Ready pill outside Fantasy; legacy plaintext demo accounts purged
+  from storage on read; neutral 404 CTA
+
 ## Backend integration (per uploaded instructions + API_SPEC)
 - [x] createRun sends full payload: goal + team + context.customer_id + quality_mode
 - [x] POST /api/runs returns only { run_id, status: "PLANNING" } — recommendation arrives via polling GET /api/runs/{run_id} (normalizeRun maps recommendation → reward, audit_events → log)

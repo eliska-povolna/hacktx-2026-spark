@@ -1,11 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Copy, Coins, DoorOpen, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { getSavedParties } from "@/api/client";
 import type { SavedParty } from "@/api/types";
-import { THEME_COPY, getPortrait, useTheme } from "@/lib/theme";
+import { adaptMockText, THEME_COPY, getPortrait, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/teams")({
@@ -36,6 +36,14 @@ function TeamsPage() {
   const { theme } = useTheme();
   const copy = THEME_COPY[theme];
   const [parties, setParties] = useState<SavedParty[]>([]);
+  const navigate = useNavigate();
+
+  // Smallest useful behavior: open the Forge with a note. Loading the exact
+  // saved configuration arrives with the real backend.
+  const openTeam = (party: SavedParty) => {
+    toast.info(copy.openTeamHint);
+    navigate({ to: "/create" });
+  };
 
   useEffect(() => {
     getSavedParties().then(setParties).catch(() => toast.error("Could not load parties."));
@@ -63,12 +71,12 @@ function TeamsPage() {
         {parties.map((party) => (
           <div key={party.id} className="parchment-panel flex flex-col p-5">
             <div className="flex items-start justify-between gap-2">
-              <h2 className="font-display text-lg font-bold text-ink">{party.name}</h2>
+              <h2 className="font-display text-lg font-bold text-ink">{adaptMockText(theme, party.name)}</h2>
               <span className="chip-parchment !text-[10px]">
                 <Users className="h-3 w-3" /> {party.memberIds.length}
               </span>
             </div>
-            <p className="mt-1 text-sm text-ink-soft">{party.purpose}</p>
+            <p className="mt-1 text-sm text-ink-soft">{adaptMockText(theme, party.purpose)}</p>
 
             <div className="mt-4 flex -space-x-3">
               {party.memberIds.map((id) => (
@@ -102,7 +110,7 @@ function TeamsPage() {
 
             <div className="mt-auto flex gap-2">
               <button
-                onClick={() => toast.info(copy.openTeamHint)}
+                onClick={() => openTeam(party)}
                 className="btn-crimson flex-1 px-3 py-1.5 text-xs"
               >
                 <DoorOpen className="h-3.5 w-3.5" /> {copy.openTeam}

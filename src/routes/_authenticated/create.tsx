@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 
 import { createRun, getDemoCustomers, getRun, isMockMode, planTeam } from "@/api/client";
+import { MOCK_REWARD_STRESSED } from "@/api/mockData";
 import type { AgentDefinition, DemoCustomer, Run, TeamDefinition } from "@/api/types";
 import { AdventurerCard } from "@/components/AdventurerCard";
 import { CharacterSheet } from "@/components/CharacterSheet";
@@ -84,6 +85,19 @@ function QuestForgePage() {
   const sheetRef = useRef<HTMLElement | null>(null);
   const isMobile = useIsMobile();
 
+  // Sample-goal switching: when the theme changes, replace the quest text
+  // ONLY if it is still the previous theme's untouched sample (or empty).
+  // Anything the user typed or edited is preserved exactly.
+  const prevThemeRef = useRef(theme);
+  useEffect(() => {
+    const prev = prevThemeRef.current;
+    prevThemeRef.current = theme;
+    if (prev === theme) return;
+    setQuest((q) =>
+      q.trim() === "" || q === THEME_COPY[prev].sampleQuest ? THEME_COPY[theme].sampleQuest : q,
+    );
+  }, [theme]);
+
   // On mobile the character sheet sits below the card grid — scroll to it
   // when an agent is selected so the tap feels like it opens the profile.
   useEffect(() => {
@@ -118,7 +132,7 @@ function QuestForgePage() {
 
   const assembleParty = async () => {
     if (!quest.trim()) {
-      toast.error("Describe your quest first.");
+      toast.error(copy.toastNoGoal);
       return;
     }
     setPlanning(true);
@@ -191,17 +205,31 @@ function QuestForgePage() {
       pollRun(run_id);
     } catch {
       setRunning(false);
-      toast.error("The quest could not be started.");
+      toast.error(copy.toastRunError);
     }
   };
 
   const saveAgent = (updated: AgentDefinition) => {
     const displayed = agents.find((agent) => agent.id === updated.id);
+    // Fields the user actually changed (vs. the themed display values) are
+    // written back to the canonical agent; untouched fields keep their
+    // canonical values so theme overlays can still apply. Any explicit edit
+    // marks the agent as customized, which freezes theme overlays for it.
+    const edited =
+      updated.role !== displayed?.role ||
+      updated.skills !== displayed?.skills ||
+      updated.allowed_tools !== displayed?.allowed_tools ||
+      updated.permissions.data_scopes !== displayed?.permissions.data_scopes;
     setAgents((prev) => prev.map((a) => a.id !== updated.id ? a : {
       ...updated,
       portrait: a.portrait,
       role: updated.role === displayed?.role ? a.role : updated.role,
       skills: updated.skills === displayed?.skills ? a.skills : updated.skills,
+      allowed_tools: updated.allowed_tools === displayed?.allowed_tools ? a.allowed_tools : updated.allowed_tools,
+      permissions: updated.permissions.data_scopes === displayed?.permissions.data_scopes
+        ? a.permissions
+        : updated.permissions,
+      customized: a.customized || edited,
     }));
     toast.success(`${updated.name} has been reconfigured.`);
   };
@@ -224,7 +252,10 @@ function QuestForgePage() {
   // run), so shared run state never carries theme-specific content and
   // switching themes after a finished run stays consistent.
   const toyotaOverlay = isMockMode() && theme === "toyota" && run?.status === "COMPLETED";
-  const displayReward = run ? (toyotaOverlay ? TOYOTA_REWARD : run.reward) : null;
+  // The Toyota demo recommendation respects the selected customer:
+  // stable → Buy Current Vehicle, stressed → Return Vehicle.
+  const toyotaReward = customerId === "customer-stressed" ? MOCK_REWARD_STRESSED : TOYOTA_REWARD;
+  const displayReward = run ? (toyotaOverlay ? toyotaReward : run.reward) : null;
   const displayMetrics = run ? (toyotaOverlay ? TOYOTA_METRICS : run.metrics) : null;
   const avoidedPct = displayMetrics ? computeAvoidedPct(displayMetrics) : 0;
   const split = displayMetrics ? computeTaskSplit(displayMetrics) : null;
@@ -420,7 +451,7 @@ function QuestForgePage() {
             </div>
             <div className="mt-4">
               <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-ink-soft">
-                Token & Tool Usage
+                Task Execution Mix
               </div>
               {split && split.total > 0 ? (
                 <>
