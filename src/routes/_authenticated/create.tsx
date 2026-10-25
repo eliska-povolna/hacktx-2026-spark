@@ -218,14 +218,35 @@ function QuestForgePage() {
       .then((sources) => {
         const builtins = sources.filter((source) => source.type === "builtin" || !source.id.startsWith("file:"));
         setContextSources(builtins);
-        setEnabledSourceIds((current) =>
-          current.length > 0 ? current.filter((id) => builtins.some((source) => source.id === id)) : builtins.map((source) => source.id),
-        );
+        setEnabledSourceIds((current) => {
+          if (current.length > 0) {
+            return current.filter((id) => builtins.some((source) => source.id === id));
+          }
+          // Fantasy defaults to connector-free simple play — no Toyota/Nessie chips on.
+          if (readTheme() === "fantasy") return [];
+          return builtins.map((source) => source.id);
+        });
       })
       .catch(() => {
         toast.error("Context sources are unavailable. Reload before running.");
       });
   }, []);
+
+  // Theme switch also resets sample context: fantasy stays connector-free;
+  // Toyota / Professional re-enable installed demo sources when the quest is still the sample.
+  useEffect(() => {
+    if (plannedTeam) return;
+    setEnabledSourceIds((current) => {
+      const builtinIds = contextSources
+        .filter((source) => source.type === "builtin" || !source.id.startsWith("file:"))
+        .map((source) => source.id);
+      if (theme === "fantasy") {
+        return current.filter((id) => !builtinIds.includes(id));
+      }
+      if (builtinIds.length === 0) return current;
+      return Array.from(new Set([...current, ...builtinIds]));
+    });
+  }, [theme, contextSources, plannedTeam]);
 
   const stopPolling = () => {
     if (pollRef.current) clearTimeout(pollRef.current);
@@ -647,7 +668,11 @@ function QuestForgePage() {
                 (!isSimplePlay && !isPortfolio && (customerError || customers.length === 0))
               }
               className="btn-outline-gold w-full px-4 py-2.5 text-sm !text-ink sm:w-auto sm:py-2"
-              title={!toyotaEnabled ? "Enable Toyota customer context to run" : undefined}
+              title={
+                !toyotaEnabled && !isSimplePlay
+                  ? "Enable Toyota customer context, or assemble a simple-play team that needs no connectors"
+                  : undefined
+              }
             >
               {running ? (
                 <>

@@ -143,7 +143,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
     ready: "Ready",
     toolsTitle: "Tools & Artifacts",
     sampleQuest:
-      "Determine the smartest next mobility decision for this traveler using vehicle, contract, usage, and financial context.",
+      "Assemble a small party that plays one fair round of rock-paper-scissors, narrates each throw, and declares a winner.",
     contextChips: ["Guest Feedback", "Ledger Data", "Competitor Notes", "Guild Policies"],
     brandTagline: "The best agent platform\nknows when not to use an agent.",
     quote: "“Good questions lead to greater journeys.”",

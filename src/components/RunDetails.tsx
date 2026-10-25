@@ -49,6 +49,22 @@ export function RunDetails({
           </p>
         </section>
       )}
+      {!!run.outputs?.length && (
+        <section className="parchment-panel p-4">
+          <h2 className="gold-heading text-xl font-bold">Outputs</h2>
+          <ul className="mt-3 space-y-4">
+            {run.outputs.map((output) => (
+              <li key={output.id} className="border-b border-border pb-3 last:border-0">
+                <h3 className="font-display font-bold text-ink">{output.title}</h3>
+                {output.summary && <p className="mt-1 text-sm text-ink-soft">{output.summary}</p>}
+                {output.content && output.content !== output.summary && (
+                  <pre className="mt-2 whitespace-pre-wrap break-words font-sans text-sm text-ink">{output.content}</pre>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {(showNessie || financial) && !run.portfolio_result && (
         <section>
           <h2 className="gold-heading text-xl font-bold">Nessie / banking provenance</h2>

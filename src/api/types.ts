@@ -176,6 +176,18 @@ export interface PortfolioResult {
   }[];
 }
 
+export interface RunOutput {
+  id: string;
+  title: string;
+  agent_id?: string | null;
+  type: string;
+  summary: string;
+  content: string;
+  timestamp?: string;
+  cost_usd?: number;
+  source_type?: string;
+}
+
 export interface Run {
   run_id: string;
   status: RunStatus;
@@ -190,6 +202,7 @@ export interface Run {
   portfolio_result?: PortfolioResult | null;
   financial_context?: FinancialContext | null;
   evaluators?: EvaluatorResult[];
+  outputs?: RunOutput[];
 }
 
 export interface DemoCustomer {

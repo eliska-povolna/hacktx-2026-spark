@@ -167,7 +167,17 @@ export function normalizeAgents(agents: Partial<AgentDefinition>[], theme: Plann
 }
 
 function formatLogTimestamp(raw: string): string {
-  return raw.includes("T") ? raw.slice(11, 19) : raw;
+  // Backend stores UTC (`...Z`). Show the viewer's local clock, not raw UTC digits.
+  const date = new Date(raw);
+  if (!Number.isFinite(date.getTime())) {
+    return raw.includes("T") ? raw.slice(11, 19) : raw;
+  }
+  return date.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
 }
 
 // Map a raw backend run (API_SPEC §10) onto the frontend Run shape.
@@ -220,6 +230,23 @@ export function normalizeRun(raw: BackendRun): Run {
     executor: event.executor_type ?? "TOOL",
   }));
 
+  const outputs = (Array.isArray(raw.outputs) ? raw.outputs : [])
+    .map((item, index) => {
+      const row = (item ?? {}) as Record<string, unknown>;
+      return {
+        id: String(row.id ?? `out-${index}`),
+        title: String(row.title ?? "Output"),
+        agent_id: row.agent_id != null ? String(row.agent_id) : null,
+        type: String(row.type ?? "OUTPUT"),
+        summary: String(row.summary ?? ""),
+        content: String(row.content ?? ""),
+        timestamp: row.timestamp != null ? String(row.timestamp) : undefined,
+        cost_usd: typeof row.cost_usd === "number" ? row.cost_usd : undefined,
+        source_type: row.source_type != null ? String(row.source_type) : undefined,
+      };
+    })
+    .filter((item) => item.content || item.summary);
+
   return {
     run_id: raw.run_id,
     status: raw.status,
@@ -234,6 +261,7 @@ export function normalizeRun(raw: BackendRun): Run {
     portfolio_result: raw.portfolio_result ?? null,
     financial_context: raw.financial_context ?? recommendation?.financial_context ?? null,
     evaluators: raw.evaluators ?? recommendation?.evaluators ?? [],
+    outputs,
   };
 }
 

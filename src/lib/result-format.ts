@@ -12,7 +12,15 @@ export function formatMoney(value: unknown): string {
 export function formatDate(value: string, withTime = false): string {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "Unavailable";
-  return date.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", ...(withTime ? { hour: "2-digit", minute: "2-digit", second: "2-digit" } : {}) });
+  // Backend timestamps are UTC; toLocaleString renders the viewer's local zone.
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    ...(withTime
+      ? { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }
+      : {}),
+  });
 }
 
 export function formatDuration(value: unknown): string {
