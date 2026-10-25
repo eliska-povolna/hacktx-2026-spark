@@ -112,7 +112,6 @@ export function ConfigureAdventurerDialog({ agent, onClose, onSave, onRemove }: 
         <div className="mb-4 flex items-start justify-between">
           <div>
             <h3 className="font-display text-xl font-bold text-ink">{copy.configureTitle}</h3>
-            <p className="text-xs text-ink-soft">Changes are kept in this session only.</p>
           </div>
           <button onClick={onClose} aria-label="Close" className="rounded p-1 text-ink-soft hover:text-ink">
             <X className="h-5 w-5" />
