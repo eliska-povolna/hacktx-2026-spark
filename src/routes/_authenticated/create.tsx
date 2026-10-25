@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import {
   BarChart3,
   CheckCircle2,
@@ -12,11 +12,12 @@ import {
   Sparkles,
   Swords,
   Trophy,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { ApiRequestError, createRun, getDemoCustomers, getRun, getSavedTeam, isMockMode, planTeam, saveTeam } from "@/api/client";
-import type { AgentDefinition, DemoCustomer, Run, TeamDefinition } from "@/api/types";
+import { ApiRequestError, createRun, deleteAttachment, getDemoCustomers, getRun, getSavedTeam, isMockMode, planTeam, uploadAttachment } from "@/api/client";
+import type { AgentDefinition, Attachment, DemoCustomer, Run, TeamDefinition } from "@/api/types";
 import { AdventurerCard } from "@/components/AdventurerCard";
 import { CharacterSheet } from "@/components/CharacterSheet";
 import { ConfigureAdventurerDialog } from "@/components/ConfigureAdventurerDialog";
@@ -84,10 +85,10 @@ function QuestForgePage() {
   const [running, setRunning] = useState(false);
   const [plannedTeam, setPlannedTeam] = useState<TeamDefinition | null>(null);
   const { teamId } = Route.useSearch();
-  const [savedId, setSavedId] = useState<string | undefined>();
-  const [sourceTheme, setSourceTheme] = useState(theme);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [loadingTeam, setLoadingTeam] = useState(false);
   const [customers, setCustomers] = useState<DemoCustomer[]>([]);
   const [customerError, setCustomerError] = useState(false);
@@ -116,8 +117,8 @@ function QuestForgePage() {
     getSavedTeam(teamId).then((team) => {
       if (!active) return;
       setPlannedTeam(team); setAgents(team.agents); setQuest(team.goal);
-      setSavedId(team.id); setSourceTheme(team.interface_theme); setSelectedId(team.agents[0]?.id ?? null);
-      setRun(null); setSaveError(false);
+      setSelectedId(team.agents[0]?.id ?? null);
+      setRun(null);
     }).catch(() => { if (active) toast.error("Could not open the saved team."); })
       .finally(() => { if (active) setLoadingTeam(false); });
     return () => { active = false; };
@@ -156,6 +157,37 @@ function QuestForgePage() {
 
   useEffect(() => stopPolling, []);
 
+  const uploadFiles = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (files.length === 0) return;
+    setUploading(true);
+    try {
+      for (const file of files) {
+        try {
+          const attachment = await uploadAttachment(file);
+          setAttachments((current) => [...current, attachment]);
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : "Could not upload the file.");
+        }
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeAttachment = async (attachment: Attachment) => {
+    setDeletingId(attachment.id);
+    try {
+      await deleteAttachment(attachment.id);
+      setAttachments((current) => current.filter((file) => file.id !== attachment.id));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not remove the file.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const assembleParty = async () => {
     if (!quest.trim()) {
       toast.error(copy.toastNoGoal);
@@ -166,35 +198,17 @@ function QuestForgePage() {
     try {
       const goal = quest;
       const planningTheme = theme;
-      const res = await planTeam(goal, planningTheme);
+      const res = await planTeam(goal, planningTheme, attachments.map((file) => file.id));
       setPlannedTeam(res.team);
       setAgents(res.team.agents);
       setSelectedId(res.team.agents[0]?.id ?? null);
-      setSourceTheme(planningTheme); setSavedId(undefined); setSaveError(false);
-      try {
-        const saved = res.saved_team ?? await saveTeam({ team: res.team, goal, interface_theme: planningTheme });
-        setSavedId(saved.id); setPlannedTeam(saved);
-      } catch {
-        setSaveError(true);
-        toast.warning("Team created, but not saved. The team storage service is unavailable.");
-      }
+      if (res.saved_team) setPlannedTeam(res.saved_team);
       toast.success("Your team has assembled.");
     } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.displayMessage ?? copy.toastPlanError : copy.toastPlanError);
+      toast.error(error instanceof ApiRequestError ? error.message : copy.toastPlanError);
     } finally {
       setPlanning(false);
     }
-  };
-
-  const saveChanges = async () => {
-    if (!plannedTeam || saving) return;
-    setSaving(true);
-    try {
-      const saved = await saveTeam({ team: { ...plannedTeam, agents: baseAgents }, goal: quest, interface_theme: sourceTheme }, savedId);
-      setSavedId(saved.id); setPlannedTeam(saved); setSaveError(false);
-      toast.success(isMockMode() ? "Team saved for this demo session." : "Team saved.");
-    } catch { setSaveError(true); toast.error("Could not save the team. Your changes remain open here."); }
-    finally { setSaving(false); }
   };
 
   // Chained-timeout polling: the next poll is scheduled only after the
@@ -243,11 +257,11 @@ function QuestForgePage() {
         summary: plannedTeam?.summary ?? quest.slice(0, 120),
         agents: baseAgents.map((agent) => ({ ...agent, portrait: "" })),
       };
-      const { run_id } = await createRun({ goal: quest, team, customerId });
+      const { run_id } = await createRun({ goal: quest, team, customerId, attachment_ids: attachments.map((file) => file.id) });
       pollRun(run_id);
-    } catch {
+    } catch (error) {
       setRunning(false);
-      toast.error(copy.toastRunError);
+      toast.error(error instanceof ApiRequestError ? error.message : copy.toastRunError);
     }
   };
 
@@ -283,7 +297,6 @@ function QuestForgePage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       {loadingTeam && <p role="status" className="text-muted-foreground">Loading saved team...</p>}
-      {saveError && <p role="alert" className="text-destructive">This team is not saved. Your current changes are only available on this page.</p>}
       {customerError && <p role="alert" className="text-destructive">Customer data is unavailable. Reload the page to try again.</p>}
       {/* SECTION 1 — Goal input */}
       <section className="parchment-panel p-5 sm:p-6">
@@ -312,6 +325,44 @@ function QuestForgePage() {
             );
           })}
         </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".txt,.md,.csv,.json,.log,text/*"
+          multiple
+          className="hidden"
+          aria-label="Add Files"
+          onChange={uploadFiles}
+          disabled={uploading || deletingId !== null || planning || running}
+        />
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-parchment text-ink hover:bg-parchment-deep hover:text-ink border-gold-dim"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading || deletingId !== null || planning || running}
+          >
+            {uploading ? <Loader2 className="animate-spin" /> : <Plus />} {uploading ? "Uploading..." : "Add Files"}
+          </Button>
+          {attachments.map((file) => (
+            <span key={file.id} className="chip-parchment max-w-full min-w-0">
+              <FileText className="h-3 w-3 shrink-0" />
+              <span className="min-w-0 truncate" title={file.filename}>{file.filename}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5 shrink-0"
+                aria-label={`Remove ${file.filename}`}
+                title={`Remove ${file.filename}`}
+                onClick={() => removeAttachment(file)}
+                disabled={uploading || deletingId !== null || planning || running}
+              >
+                {deletingId === file.id ? <Loader2 className="animate-spin" /> : <X />}
+              </Button>
+            </span>
+          ))}
+        </div>
         {/* Controls: full-width rows on phones, inline group on larger screens */}
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           {agents.length > 0 && customers.length > 0 && (
@@ -333,7 +384,7 @@ function QuestForgePage() {
           {agents.length > 0 && (
             <button
               onClick={startRun}
-              disabled={running || planning || loadingTeam || customerError || customers.length === 0}
+              disabled={running || planning || loadingTeam || uploading || deletingId !== null || customerError || customers.length === 0}
               className="btn-outline-gold w-full px-4 py-2.5 text-sm !text-ink sm:w-auto sm:py-2"
             >
               {running ? (
@@ -349,7 +400,7 @@ function QuestForgePage() {
           )}
           <button
             onClick={assembleParty}
-            disabled={planning || running || loadingTeam}
+            disabled={planning || running || loadingTeam || uploading || deletingId !== null}
             className="btn-crimson w-full px-5 py-2.5 text-sm sm:w-auto sm:py-2"
           >
             {planning ? (
@@ -373,8 +424,8 @@ function QuestForgePage() {
             <span className="text-xs text-muted-foreground">
               {agents.length} {copy.readySuffix}
             </span>
-            <Button variant="outline" onClick={saveChanges} disabled={saving || planning || loadingTeam}>
-              {saving ? <Loader2 className="animate-spin" /> : <Save />} Save Team
+            <Button variant="outline" disabled title="Team saving is unavailable.">
+              <Save /> Save Team
             </Button>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">

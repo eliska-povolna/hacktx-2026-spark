@@ -36,6 +36,8 @@
 - [x] Live mode is the default and local .env (gitignored) uses the live API.
 
 ## Open
+- [x] Connect Create attachments to live multipart upload/delete; forward IDs to planning and runs; preserve design and avoid team-save endpoints. Nine attachment tests and 30 related tests pass.
+- [ ] Verify successful live upload → plan → run → delete after the deployed POST https://questmaster.tech/api/attachments stops returning 404. Current real-browser upload failure is visible and no mock replacement is used.
 - [x] Final production integration pass: separate Toyota entry, truthful live activity/reports/integration states, complete recommendation details, hidden mock sidebar teams and README. Live Sarah→Buy / Jordan→Return verified in browser; mock/live API tests pass (45 tests); automatic build/typecheck OK. Full lint has existing formatting debt; changed-file semantic lint passes.
 - [ ] Backend must expose GET /api/audit-events?limit=200 (currently 404) and add result/date/llm_calls_avoided to GET /api/runs. Frontend shows unavailable values and truthful errors until supplied.
 - [x] Live API polish: identity-stable themed jpg portraits for unfamiliar agents; removed Add Files and misleading backend stubs; HTTP 503 messages and fallback plans rejected; live lunar-beekeeping team verified in all styles, 22 tests passed.
