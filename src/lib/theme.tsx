@@ -284,6 +284,29 @@ export const TOYOTA_AGENTS: AgentDefinition[] = MOCK_AGENTS.map((agent) => {
   return override ? { ...agent, role: override.role, skills: override.skills } : agent;
 });
 
+// Theme-specific portrait sets (defined before getAgentsForTheme uses them).
+const PRO_PORTRAITS: Record<string, string> = {
+  maya: proMaya,
+  rowan: proRowan,
+  brann: proBrann,
+  selene: proSelene,
+  odo: proOdo,
+};
+
+const TOYOTA_PORTRAITS: Record<string, string> = {
+  maya: toyotaMaya,
+  rowan: toyotaRowan,
+  brann: toyotaBrann,
+  selene: toyotaSelene,
+  odo: toyotaOdo,
+};
+
+export function getPortrait(theme: AppTheme, agentId: string): string {
+  if (theme === "professional") return PRO_PORTRAITS[agentId] ?? PORTRAITS[agentId] ?? "";
+  if (theme === "toyota") return TOYOTA_PORTRAITS[agentId] ?? PORTRAITS[agentId] ?? "";
+  return PORTRAITS[agentId] ?? "";
+}
+
 export const TOYOTA_REWARD: QuestReward = {
   id: "out-toyota-001",
   title: "Recommended Next Move: Buy Current Vehicle",
