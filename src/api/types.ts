@@ -179,6 +179,7 @@ export interface FinancialContext {
 }
 
 export interface EvaluatorResult {
+  label?: string;
   name?: string;
   evaluator?: string;
   evaluator_id?: string;

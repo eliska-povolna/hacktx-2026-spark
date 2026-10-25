@@ -21,6 +21,7 @@ import { AdventurerCard } from "@/components/AdventurerCard";
 import { CharacterSheet } from "@/components/CharacterSheet";
 import { ConfigureAdventurerDialog } from "@/components/ConfigureAdventurerDialog";
 import { ExecutorBadge } from "@/components/ExecutorBadge";
+import { RunDetails } from "@/components/RunDetails";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { computeAvoidedPct, computeTaskSplit } from "@/lib/metrics";
@@ -88,6 +89,7 @@ function QuestForgePage() {
   const [saveError, setSaveError] = useState(false);
   const [loadingTeam, setLoadingTeam] = useState(false);
   const [customers, setCustomers] = useState<DemoCustomer[]>([]);
+  const [customerError, setCustomerError] = useState(false);
   const [customerId, setCustomerId] = useState("customer-stable");
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sheetRef = useRef<HTMLElement | null>(null);
@@ -140,7 +142,8 @@ function QuestForgePage() {
         }
       })
       .catch(() => {
-        // Customer list is optional in mock/offline mode — keep the default.
+        setCustomerError(true);
+        toast.error("Customer data is unavailable. Please reload before running the team.");
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -280,6 +283,7 @@ function QuestForgePage() {
     <div className="mx-auto max-w-6xl space-y-6">
       {loadingTeam && <p role="status" className="text-muted-foreground">Loading saved team...</p>}
       {saveError && <p role="alert" className="text-destructive">This team is not saved. Your current changes are only available on this page.</p>}
+      {customerError && <p role="alert" className="text-destructive">Customer data is unavailable. Reload the page to try again.</p>}
       {/* SECTION 1 — Goal input */}
       <section className="parchment-panel p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-3">
@@ -328,7 +332,7 @@ function QuestForgePage() {
           {agents.length > 0 && (
             <button
               onClick={startRun}
-              disabled={running || planning || loadingTeam}
+              disabled={running || planning || loadingTeam || customerError || customers.length === 0}
               className="btn-outline-gold w-full px-4 py-2.5 text-sm !text-ink sm:w-auto sm:py-2"
             >
               {running ? (
@@ -431,8 +435,8 @@ function QuestForgePage() {
               </div>
             ) : (
               <p className="flex items-center gap-2 text-sm italic text-ink-soft">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                The team is still working... ({run.status.toLowerCase().replace("_", " ")})
+                {!TERMINAL_STATUSES.has(run.status) && <Loader2 className="h-4 w-4 animate-spin" />}
+                {TERMINAL_STATUSES.has(run.status) ? "No recommendation is available for this run." : `The team is still working... (${run.status.toLowerCase().replaceAll("_", " ")})`}
               </p>
             )}
           </section>
@@ -524,6 +528,8 @@ function QuestForgePage() {
           </section>
         </div>
       )}
+
+      {run && <RunDetails run={run} toyota={theme === "toyota"} />}
 
       {/* Run status banner — in progress */}
       {run && !TERMINAL_STATUSES.has(run.status) && (
