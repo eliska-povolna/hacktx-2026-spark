@@ -26,6 +26,12 @@ import toyotaMaya from "@/assets/toyota-maya.jpg";
 import toyotaOdo from "@/assets/toyota-odo.jpg";
 import toyotaRowan from "@/assets/toyota-rowan.jpg";
 import toyotaSelene from "@/assets/toyota-selene.jpg";
+import fantasyAmara from "@/assets/portrait-amara.jpg";
+import fantasyKenji from "@/assets/portrait-kenji.jpg";
+import proAmara from "@/assets/pro-amara.jpg";
+import proKenji from "@/assets/pro-kenji.jpg";
+import toyotaAmara from "@/assets/toyota-amara.jpg";
+import toyotaKenji from "@/assets/toyota-kenji.jpg";
 
 export type AppTheme = "fantasy" | "professional" | "toyota";
 
@@ -286,6 +292,8 @@ export const TOYOTA_AGENTS: AgentDefinition[] = MOCK_AGENTS.map((agent) => {
 
 // Theme-specific portrait sets (defined before getAgentsForTheme uses them).
 const PRO_PORTRAITS: Record<string, string> = {
+  amara: proAmara,
+  kenji: proKenji,
   maya: proMaya,
   rowan: proRowan,
   brann: proBrann,
@@ -294,6 +302,8 @@ const PRO_PORTRAITS: Record<string, string> = {
 };
 
 const TOYOTA_PORTRAITS: Record<string, string> = {
+  amara: toyotaAmara,
+  kenji: toyotaKenji,
   maya: toyotaMaya,
   rowan: toyotaRowan,
   brann: toyotaBrann,
@@ -302,9 +312,35 @@ const TOYOTA_PORTRAITS: Record<string, string> = {
 };
 
 export function getPortrait(theme: AppTheme, agentId: string): string {
-  if (theme === "professional") return PRO_PORTRAITS[agentId] ?? PORTRAITS[agentId] ?? "";
-  if (theme === "toyota") return TOYOTA_PORTRAITS[agentId] ?? PORTRAITS[agentId] ?? "";
-  return PORTRAITS[agentId] ?? "";
+  const key = agentId.startsWith("custom-amara-") ? "amara"
+    : agentId.startsWith("custom-kenji-") ? "kenji" : agentId;
+  const fantasy = key === "amara" ? fantasyAmara : key === "kenji" ? fantasyKenji : PORTRAITS[key];
+  if (theme === "professional") return PRO_PORTRAITS[key] ?? fantasy ?? "";
+  if (theme === "toyota") return TOYOTA_PORTRAITS[key] ?? fantasy ?? "";
+  return fantasy ?? "";
+}
+
+// Canonical configuration is independent of the currently displayed theme.
+export function createCustomAgent(agents: AgentDefinition[]): AgentDefinition {
+  const choices = [{ key: "amara", name: "Amara" }, { key: "kenji", name: "Kenji" }];
+  const choice = choices.find(({ key }) => !agents.some((agent) => agent.id.startsWith(`custom-${key}-`)))
+    ?? choices[agents.filter((agent) => agent.id.startsWith("custom-")).length % choices.length]
+    ?? { key: "amara", name: "Amara" };
+  let name = choice.name;
+  let suffix = 2;
+  while (agents.some((agent) => agent.name === name)) name = `${choice.name} ${suffix++}`;
+  const id = `custom-${choice.key}-${crypto.randomUUID()}`;
+  return {
+    id, name, portrait: getPortrait("fantasy", id),
+    role: "Custom Specialist",
+    purpose: "A custom agent shaped by your goal.",
+    description: "A custom agent. Configure their role, skills, and guardrails.",
+    skills: ["Custom"], instructions: "", allowed_tools: ["Scroll Archive"],
+    permissions: { data_scopes: ["guest_feedback"], actions: ["read"] },
+    guardrails: ["Stay within budget limits"],
+    model_policy: "Use LLM for reasoning. Prefer tools and code first.",
+    budget: { max_llm_cost_usd: 0.5, max_llm_calls: 2 }, estimated_cost_usd: 0.05,
+  };
 }
 
 export const TOYOTA_REWARD: QuestReward = {
@@ -335,7 +371,9 @@ export const TOYOTA_METRICS: RunMetrics = {
 };
 
 export function getAgentsForTheme(theme: AppTheme, agents: AgentDefinition[]): AgentDefinition[] {
-  const base = theme === "toyota" ? TOYOTA_AGENTS : agents;
-  if (theme === "fantasy") return base;
-  return base.map((agent) => ({ ...agent, portrait: getPortrait(theme, agent.id) }));
+  return agents.map((agent) => ({
+    ...agent,
+    ...(theme === "toyota" ? TOYOTA_ROLES[agent.id] : undefined),
+    portrait: getPortrait(theme, agent.id) || agent.portrait,
+  }));
 }
