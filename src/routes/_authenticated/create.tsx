@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ChangeEvent } from "react";
 import {
   BarChart3,
   CheckCircle2,
@@ -232,9 +232,9 @@ function QuestForgePage() {
       });
   }, []);
 
-  // Theme switch also resets sample context: fantasy stays connector-free;
-  // Toyota / Professional re-enable installed demo sources when the quest is still the sample.
-  useEffect(() => {
+  // Theme switch resets demo connectors before paint so a quick chip click
+  // cannot race the auto-enable and accidentally turn Toyota context back off.
+  useLayoutEffect(() => {
     if (plannedTeam) return;
     setEnabledSourceIds((current) => {
       const builtinIds = contextSources
@@ -389,16 +389,27 @@ function QuestForgePage() {
     pollRef.current = setTimeout(tick, 1000);
   };
 
-  const startRun = async () => {
-    if (running || planningError) return;
+  const runBlockReason = (): string | null => {
+    if (running || planning || loadingTeam || uploading || deletingId !== null) {
+      return "Wait for the current action to finish.";
+    }
+    if (planningError) return "Fix the planning error before running.";
     if (!toyotaEnabled && !isSimplePlay) {
-      toast.error(
-        "Enable Toyota customer context to run the mobility decision team, or assemble a simple play team that needs no connectors.",
-      );
-      return;
+      return "Turn on Toyota customer context (chip above), or assemble a simple-play team that needs no connectors.";
+    }
+    if (isPortfolio && !nessieEnabled) {
+      return "Turn on Capital One Nessie banking — portfolio runs need live banking context.";
     }
     if (!isSimplePlay && !isPortfolio && (customerError || customers.length === 0)) {
-      toast.error("Customer data is unavailable. Reload before running.");
+      return "Customer data is unavailable. Reload before running.";
+    }
+    return null;
+  };
+
+  const startRun = async () => {
+    const blocked = runBlockReason();
+    if (blocked) {
+      toast.error(blocked);
       return;
     }
     setRunning(true);
@@ -519,26 +530,35 @@ function QuestForgePage() {
             status: "ready",
           }))).map((source, i) => {
             const ChipIcon = CHIP_ICONS[i % CHIP_ICONS.length] ?? FileText;
-            const enabled = "id" in source && !String(source.id).startsWith("legacy-")
+            const toggleable = "id" in source && !String(source.id).startsWith("legacy-")
+              && ("dismissible" in source ? source.dismissible !== false : true);
+            const enabled = toggleable
               ? enabledSourceIds.includes(source.id)
               : true;
-            const dismissible = "dismissible" in source ? source.dismissible : false;
             return (
               <button
                 key={source.id}
                 type="button"
                 aria-pressed={enabled}
-                title={source.description || source.label}
-                disabled={!dismissible || planning || running}
-                onClick={() => dismissible && toggleContextSource(source.id)}
+                title={
+                  toggleable
+                    ? `${enabled ? "On" : "Off"} — ${source.description || source.label}. Click to ${enabled ? "disable" : "enable"}.`
+                    : source.description || source.label
+                }
+                disabled={!toggleable || planning || running}
+                onClick={() => toggleable && toggleContextSource(source.id)}
                 className={cn(
                   "chip-parchment",
-                  dismissible && "cursor-pointer",
-                  !enabled && "opacity-40 line-through",
+                  toggleable && "cursor-pointer",
+                  enabled ? "arcane-selected" : "opacity-45",
                 )}
               >
                 <ChipIcon className="h-3 w-3" /> {source.label}
-                {dismissible && enabled && <X className="h-3 w-3 opacity-60" />}
+                {toggleable && (
+                  <span className="text-[10px] uppercase tracking-wide opacity-70">
+                    {enabled ? "On" : "Off"}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -655,24 +675,11 @@ function QuestForgePage() {
           )}
           {agents.length > 0 && (
             <button
+              type="button"
               onClick={startRun}
-              disabled={
-                running ||
-                planning ||
-                loadingTeam ||
-                uploading ||
-                deletingId !== null ||
-                Boolean(planningError) ||
-                (!toyotaEnabled && !isSimplePlay) ||
-                (isPortfolio && !nessieEnabled) ||
-                (!isSimplePlay && !isPortfolio && (customerError || customers.length === 0))
-              }
+              disabled={running || planning || loadingTeam || uploading || deletingId !== null}
               className="btn-outline-gold w-full px-4 py-2.5 text-sm !text-ink sm:w-auto sm:py-2"
-              title={
-                !toyotaEnabled && !isSimplePlay
-                  ? "Enable Toyota customer context, or assemble a simple-play team that needs no connectors"
-                  : undefined
-              }
+              title={runBlockReason() ?? "Start the run with the enabled context sources"}
             >
               {running ? (
                 <>
@@ -701,9 +708,14 @@ function QuestForgePage() {
             )}
           </button>
         </div>
-        {agents.length > 0 && !toyotaEnabled && (
-          <p className="mt-2 text-[11px] text-ink-soft">
-            Run is locked without Toyota customer context — the live executor is the mobility decision pipeline. Nessie banking is {nessieEnabled ? "on" : "off"}.
+        {agents.length > 0 && !isSimplePlay && !toyotaEnabled && (
+          <p className="mt-2 text-[11px] text-crimson">
+            Turn on the Toyota customer context chip to run this mobility team. Nessie banking is {nessieEnabled ? "on" : "off"}.
+          </p>
+        )}
+        {agents.length > 0 && isPortfolio && !nessieEnabled && (
+          <p className="mt-2 text-[11px] text-crimson">
+            Turn on Capital One Nessie banking — portfolio shortlists need banking context.
           </p>
         )}
       </section>
