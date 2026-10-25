@@ -1,6 +1,7 @@
 # QuestMaster roadmap
 
 ## Done
+- Compact sidebar without a visible scrollbar; uploaded QuestMaster favicon
 - Fantasy / Professional / Toyota interface styles with switcher (sidebar + Settings)
 - Multicultural themed portraits for all agents in every style
 - Custom agents (Amara, Kenji) with distinct names and portraits

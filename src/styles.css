@@ -440,6 +440,43 @@
   }
 }
 
+/* Navigation keeps its controls anchored; only the middle can scroll on
+   exceptionally short screens, without adding visual chrome. */
+.sidebar-navigation {
+  scrollbar-width: none;
+}
+
+.sidebar-navigation::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-height: 760px) {
+  .quest-sidebar .sidebar-brand {
+    padding-top: 1rem;
+    padding-bottom: 0.75rem;
+  }
+  .quest-sidebar .sidebar-nav-link {
+    padding-top: 0.375rem;
+    padding-bottom: 0.375rem;
+  }
+  .quest-sidebar .sidebar-saved-parties {
+    padding-top: 0.75rem;
+  }
+  .quest-sidebar .sidebar-quote {
+    display: none;
+  }
+  .quest-sidebar .sidebar-footer {
+    padding-bottom: 0.75rem;
+  }
+}
+
+@media (max-height: 600px) {
+  .quest-sidebar .sidebar-nav-subtitle,
+  .quest-sidebar .sidebar-saved-parties {
+    display: none;
+  }
+}
+
 /* ---- Reusable fantasy surfaces ---- */
 
 @utility parchment-panel {
