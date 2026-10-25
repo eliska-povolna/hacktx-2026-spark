@@ -4,9 +4,8 @@ import { Copy, Coins, DoorOpen, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { getSavedParties } from "@/api/client";
-import { PORTRAITS } from "@/api/mockData";
 import type { SavedParty } from "@/api/types";
-import { THEME_COPY, useTheme } from "@/lib/theme";
+import { THEME_COPY, getPortrait, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/teams")({
@@ -75,7 +74,7 @@ function TeamsPage() {
               {party.memberIds.map((id) => (
                 <span key={id} className="relative">
                   <img
-                    src={PORTRAITS[id]}
+                    src={getPortrait(theme, id)}
                     alt={id}
                     loading="lazy"
                     width={816}

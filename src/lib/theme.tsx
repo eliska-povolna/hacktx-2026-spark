@@ -13,8 +13,19 @@ import {
   type ReactNode,
 } from "react";
 
-import { MOCK_AGENTS } from "@/api/mockData";
+import { MOCK_AGENTS, PORTRAITS } from "@/api/mockData";
 import type { AgentDefinition, QuestReward, RunMetrics } from "@/api/types";
+
+import proBrann from "@/assets/pro-brann.jpg";
+import proMaya from "@/assets/pro-maya.jpg";
+import proOdo from "@/assets/pro-odo.jpg";
+import proRowan from "@/assets/pro-rowan.jpg";
+import proSelene from "@/assets/pro-selene.jpg";
+import toyotaBrann from "@/assets/toyota-brann.jpg";
+import toyotaMaya from "@/assets/toyota-maya.jpg";
+import toyotaOdo from "@/assets/toyota-odo.jpg";
+import toyotaRowan from "@/assets/toyota-rowan.jpg";
+import toyotaSelene from "@/assets/toyota-selene.jpg";
 
 export type AppTheme = "fantasy" | "professional" | "toyota";
 
@@ -273,6 +284,29 @@ export const TOYOTA_AGENTS: AgentDefinition[] = MOCK_AGENTS.map((agent) => {
   return override ? { ...agent, role: override.role, skills: override.skills } : agent;
 });
 
+// Theme-specific portrait sets (defined before getAgentsForTheme uses them).
+const PRO_PORTRAITS: Record<string, string> = {
+  maya: proMaya,
+  rowan: proRowan,
+  brann: proBrann,
+  selene: proSelene,
+  odo: proOdo,
+};
+
+const TOYOTA_PORTRAITS: Record<string, string> = {
+  maya: toyotaMaya,
+  rowan: toyotaRowan,
+  brann: toyotaBrann,
+  selene: toyotaSelene,
+  odo: toyotaOdo,
+};
+
+export function getPortrait(theme: AppTheme, agentId: string): string {
+  if (theme === "professional") return PRO_PORTRAITS[agentId] ?? PORTRAITS[agentId] ?? "";
+  if (theme === "toyota") return TOYOTA_PORTRAITS[agentId] ?? PORTRAITS[agentId] ?? "";
+  return PORTRAITS[agentId] ?? "";
+}
+
 export const TOYOTA_REWARD: QuestReward = {
   id: "out-toyota-001",
   title: "Recommended Next Move: Buy Current Vehicle",
@@ -301,5 +335,7 @@ export const TOYOTA_METRICS: RunMetrics = {
 };
 
 export function getAgentsForTheme(theme: AppTheme, agents: AgentDefinition[]): AgentDefinition[] {
-  return theme === "toyota" ? TOYOTA_AGENTS : agents;
+  const base = theme === "toyota" ? TOYOTA_AGENTS : agents;
+  if (theme === "fantasy") return base;
+  return base.map((agent) => ({ ...agent, portrait: getPortrait(theme, agent.id) }));
 }
