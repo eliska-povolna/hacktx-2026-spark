@@ -19,11 +19,11 @@ export function readTheme(): AppTheme {
 }
 
 // Preserve context identity even if this module itself is hot-reloaded.
-const ThemeContext = import.meta.hot?.data["themeContext"] as
+const ThemeContext = import.meta.hot?.data?.["themeContext"] as
   ReturnType<typeof createContext<ThemeContextValue | null>> | undefined
   ?? createContext<ThemeContextValue | null>(null);
 
-if (import.meta.hot) import.meta.hot.data["themeContext"] = ThemeContext;
+if (import.meta.hot?.data) import.meta.hot.data["themeContext"] = ThemeContext;
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<AppTheme>("fantasy");
