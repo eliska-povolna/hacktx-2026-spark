@@ -69,7 +69,11 @@
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-forest: var(--forest);
+}
 
+/* Fonts live outside `@theme inline` so [data-theme] blocks can override
+   the CSS variables at runtime (inline themes bake values at build time). */
+@theme {
   --font-display: "Cinzel", "Georgia", serif;
   --font-body: "Alegreya Sans", "Segoe UI", sans-serif;
 }
