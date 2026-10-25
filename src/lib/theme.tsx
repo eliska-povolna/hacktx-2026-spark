@@ -168,7 +168,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
     toastAgentRemoved: (name) => `${name} has been dismissed from the party.`,
     toastTeamRemoved: (name) => `${name} disbanded.`,
     openTeam: "Open Party",
-    openTeamHint: "Opening parties in the Forge arrives with the backend.",
+    openTeamHint: "Open this saved party in the Quest Forge.",
     reportGoalCol: "Quest",
     reportTeamCol: "Party",
     logsEmpty: "No entries in this chapter yet.",
@@ -241,7 +241,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
     toastAgentRemoved: (name) => `${name} has been removed from the team.`,
     toastTeamRemoved: (name) => `${name} deleted.`,
     openTeam: "Open Team",
-    openTeamHint: "Opening teams in the editor arrives with the backend.",
+    openTeamHint: "Open this saved team in the editor.",
     reportGoalCol: "Goal",
     reportTeamCol: "Team",
     logsEmpty: "No activity yet.",
@@ -314,7 +314,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
     toastAgentRemoved: (name) => `${name} has been removed from the decision team.`,
     toastTeamRemoved: (name) => `${name} deleted.`,
     openTeam: "Open Team",
-    openTeamHint: "Opening teams in the studio arrives with the backend.",
+    openTeamHint: "Open this saved team in the studio.",
     reportGoalCol: "Decision",
     reportTeamCol: "Decision Team",
     logsEmpty: "No activity yet.",
@@ -441,13 +441,22 @@ const TOYOTA_PORTRAITS: Record<string, string> = {
   odo: toyotaOdo,
 };
 
-export function getPortrait(theme: AppTheme, agentId: string): string {
-  const key = agentId.startsWith("custom-amara-") ? "amara"
-    : agentId.startsWith("custom-kenji-") ? "kenji" : agentId;
-  const fantasy = key === "amara" ? fantasyAmara : key === "kenji" ? fantasyKenji : PORTRAITS[key];
-  if (theme === "professional") return PRO_PORTRAITS[key] ?? fantasy ?? "";
-  if (theme === "toyota") return TOYOTA_PORTRAITS[key] ?? fantasy ?? "";
-  return fantasy ?? "";
+const PORTRAIT_KEYS = ["maya", "rowan", "brann", "selene", "odo", "amara", "kenji"];
+
+export function getPortrait(theme: AppTheme, agentId: string, agentName = ""): string {
+  const id = agentId.toLowerCase();
+  const key = id.startsWith("custom-amara-") ? "amara"
+    : id.startsWith("custom-kenji-") ? "kenji" : id;
+  const pool = theme === "professional" ? PRO_PORTRAITS : theme === "toyota" ? TOYOTA_PORTRAITS
+    : { ...PORTRAITS, amara: fantasyAmara, kenji: fantasyKenji };
+  const matched = pool[key] || pool[agentName.toLowerCase()];
+  if (matched) return matched;
+  // Identity-based selection is stable across reordering and theme changes.
+  let hash = 0;
+  for (const character of id || agentName.toLowerCase()) {
+    hash = (Math.imul(hash, 31) + character.charCodeAt(0)) >>> 0;
+  }
+  return pool[PORTRAIT_KEYS[hash % PORTRAIT_KEYS.length] ?? "maya"] || fantasyAmara;
 }
 
 // Canonical configuration is independent of the currently displayed theme.
@@ -523,11 +532,9 @@ export function getSampleAgentsForTheme(theme: AppTheme, agents: AgentDefinition
 
 // Generated/saved configurations are authoritative; styling never changes them.
 export function getAgentsForTheme(theme: AppTheme, agents: AgentDefinition[]): AgentDefinition[] {
-  return agents.map((agent, index) => ({
+  return agents.map((agent) => ({
     ...agent,
-    portrait: getPortrait(theme, agent.id) || getPortrait(theme, agent.name.toLowerCase())
-      || getPortrait(theme, ["maya", "rowan", "brann", "selene", "odo", "amara", "kenji"][index % 7] ?? "maya")
-      || agent.portrait,
+    portrait: getPortrait(theme, agent.id, agent.name),
   }));
 }
 

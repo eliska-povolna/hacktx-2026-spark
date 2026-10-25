@@ -33,9 +33,10 @@
 - [x] Demo customers: GET /api/demo/customers + customer selector in Quest Forge
 - [x] createDemoSession stays client-side (backend has no /demo-session)
 - [x] VITE_API_BASE_URL=https://questmaster.tech/api (never raw IP:8000 — Caddy exposes only HTTPS)
-- [x] Live mode is the default; local .env (gitignored) enables mock mode for the preview
+- [x] Live mode is the default and local .env (gitignored) uses the live API.
 
 ## Open
+- [x] Live API polish: identity-stable themed jpg portraits for unfamiliar agents; removed Add Files and misleading backend stubs; HTTP 503 messages and fallback plans rejected; live lunar-beekeeping team verified in all styles, 22 tests passed.
 - [x] Generate from the active interface goal and keep generated configurations identical across styles.
 - [x] Prepare external saved-team CRUD, reopening by teamId, editing and explicit Save Team; no mock fallback in live mode.
 - [x] Supply backend implementation prompts in docs/QuestMaster_TEAM_BACKEND_PROMPTS.md; verify interface switching and session mock CRUD.

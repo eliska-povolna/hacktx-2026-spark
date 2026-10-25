@@ -4,6 +4,25 @@ import { MOCK_AGENTS } from "@/api/mockData";
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.resetModules(); });
 
 describe("team generation and storage", () => {
+  it("surfaces the planner's HTTP 503 message without a fallback team", async () => {
+    vi.stubEnv("VITE_USE_MOCK_API", "false");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: {
+      code: "LLM_UNAVAILABLE", message: "Planner unavailable. Please try again.", recoverable: true,
+    } }), { status: 503 })));
+    const { planTeam } = await import("@/api/client");
+    await expect(planTeam("Map lunar beehives", "fantasy")).rejects.toMatchObject({
+      displayMessage: "Planner unavailable. Please try again.",
+    });
+  });
+
+  it("rejects HTTP 200 plans marked fallback_used=true", async () => {
+    vi.stubEnv("VITE_USE_MOCK_API", "false");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      team: { id: "fallback", team_name: "Toyota default", agents: MOCK_AGENTS }, fallback_used: true,
+    }), { status: 200 })));
+    const { planTeam } = await import("@/api/client");
+    await expect(planTeam("Map lunar beehives", "fantasy")).rejects.toThrow("Planner returned a fallback team.");
+  });
   it("sends the actual goal and active interface to the external planner", async () => {
     vi.stubEnv("VITE_USE_MOCK_API", "false");
     const fetcher = vi.fn().mockImplementation(async () => new Response(JSON.stringify({
