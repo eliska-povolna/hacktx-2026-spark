@@ -46,7 +46,7 @@ import type {
   TaskStatus,
 } from "./types";
 import type { PlanningInterface, SavedTeam, SavedTeamSummary, SaveTeamInput } from "./types";
-import { getFunctionPortrait, getPortrait, getSampleAgentsForTheme, getThemePortraitByIndex } from "@/lib/theme";
+import { assignFunctionPortraits, getPortrait, getSampleAgentsForTheme, getThemePortraitByIndex } from "@/lib/theme";
 
 const USE_MOCK = (import.meta.env["VITE_USE_MOCK_API"] ?? "false") === "true";
 const API_BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "https://questmaster.tech/api";
@@ -123,14 +123,17 @@ export async function createDemoSession(): Promise<DemoSession> {
 // so the same kind of agent always shows the same face in every theme;
 // unclassifiable agents keep stable identity hashing.
 export function normalizeAgents(agents: Partial<AgentDefinition>[], theme: PlanningInterface = "fantasy"): AgentDefinition[] {
-  const usedKeys = new Set<string>();
-  return agents.map((agent, i) => {
-    const name = agent.name ?? `Agent ${i + 1}`;
+  const withIds = agents.map((agent, i) => ({
+    ...agent,
+    id: agent.id ?? `agent-${i + 1}`,
+    name: agent.name ?? `Agent ${i + 1}`,
+  }));
+  const portraits = assignFunctionPortraits(theme, withIds);
+  return withIds.map((agent, i) => {
     const purpose = agent.purpose ?? "";
-    const id = agent.id ?? `agent-${i + 1}`;
     return {
-      id,
-      name,
+      id: agent.id,
+      name: agent.name,
       role: agent.role ?? "Specialist",
       purpose,
       description: agent.description || purpose,
@@ -142,9 +145,7 @@ export function normalizeAgents(agents: Partial<AgentDefinition>[], theme: Plann
       model_policy: agent.model_policy ?? "auto",
       budget: agent.budget ?? { max_llm_cost_usd: 0.05, max_llm_calls: 2 },
       estimated_cost_usd: agent.estimated_cost_usd ?? 0,
-      portrait: agent.portrait?.trim()
-        || getFunctionPortrait(theme, { id, name, role: agent.role, skills: agent.skills, purpose, permissions: agent.permissions }, usedKeys)
-        || getThemePortraitByIndex(theme, i),
+      portrait: agent.portrait?.trim() || portraits[i] || getThemePortraitByIndex(theme, i),
       ...(agent.customized !== undefined ? { customized: agent.customized } : {}),
     };
   });
