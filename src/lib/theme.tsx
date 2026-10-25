@@ -597,15 +597,32 @@ export function getSampleAgentsForTheme(theme: AppTheme, agents: AgentDefinition
 }
 
 // Generated/saved configurations are authoritative; styling never changes them.
-// Portraits follow the agent's function (finance → Maya, review → Odo, …) so
-// the same kind of agent keeps the same face in every theme; unclassifiable
-// agents keep stable identity hashing.
+// An agent's assigned identity (set by normalizeAgents by function, or by the
+// mock data) is preserved: we find which pool key its current portrait belongs
+// to and swap in the same key's portrait for the new theme. Agents without a
+// recognizable portrait fall back to function classification, then hashing.
+const ALL_PORTRAIT_KEYS = [...PORTRAIT_KEYS, "amara", "kenji"];
+
+function portraitKeyFor(agent: AgentDefinition): string | null {
+  if (!agent.portrait) return null;
+  for (const theme of ["fantasy", "professional", "toyota"] as const) {
+    for (const key of ALL_PORTRAIT_KEYS) {
+      if (getPortrait(theme, key) === agent.portrait) return key;
+    }
+  }
+  return null;
+}
+
 export function getAgentsForTheme(theme: AppTheme, agents: AgentDefinition[]): AgentDefinition[] {
   const usedKeys = new Set<string>();
-  return agents.map((agent) => ({
-    ...agent,
-    portrait: getFunctionPortrait(theme, agent, usedKeys),
-  }));
+  return agents.map((agent) => {
+    const key = portraitKeyFor(agent);
+    if (key) {
+      usedKeys.add(key);
+      return { ...agent, portrait: getPortrait(theme, key) };
+    }
+    return { ...agent, portrait: getFunctionPortrait(theme, agent, usedKeys) };
+  });
 }
 
 // ---- Mock-content text adapter (presentation only) ----
