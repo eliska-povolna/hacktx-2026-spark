@@ -72,3 +72,23 @@ describe("context wiring", () => {
     expect(agent?.role).toBe("Financial Analyst");
   });
 });
+
+describe("unsupported planner responses", () => {
+  it("rejects NEEDS_SETUP before attempting to normalize a missing team", async () => {
+    const api = await liveApi(vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      team: null, execution_status: "NEEDS_SETUP", fallback_used: false, planner_source: "LLM",
+    }))));
+    await expect(api.planTeam("Build a recruiting team")).rejects.toThrow("NEEDS_SETUP");
+  });
+
+  it("preserves workflow metadata in a supported plan", async () => {
+    const api = await liveApi(vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      team: { id: "t", team_name: "Mobility", summary: "", agents: [], policy: {
+        workflow_kind: "mobility_decision", scope: "single_customer", work_style: "balanced",
+        max_llm_calls: 0, max_llm_cost_usd: 0, guardrails: [],
+      } }, fallback_used: false, planner_source: "LLM",
+    }))));
+    const res = await api.planTeam("Recommend a Toyota mobility decision");
+    expect(res.team.policy).toMatchObject({ workflow_kind: "mobility_decision", scope: "single_customer", max_llm_calls: 0 });
+  });
+});

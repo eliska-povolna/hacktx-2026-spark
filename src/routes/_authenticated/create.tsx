@@ -119,6 +119,7 @@ function QuestForgePage() {
   const agents = getAgentsForTheme(theme, baseAgents);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [planning, setPlanning] = useState(false);
+  const [planningError, setPlanningError] = useState<string | null>(null);
   const [configureId, setConfigureId] = useState<string | null>(null);
   const [run, setRun] = useState<Run | null>(null);
   const [running, setRunning] = useState(false);
@@ -174,6 +175,7 @@ function QuestForgePage() {
     getSavedTeam(teamId).then((team) => {
       if (!active) return;
       loadedTeamIdRef.current = teamId;
+      setPlanningError(null);
       setPlannedTeam(team); setAgents(team.agents); setQuest(team.goal);
       setSelectedId(team.agents[0]?.id ?? null);
       setRun(null);
@@ -267,6 +269,7 @@ function QuestForgePage() {
       return;
     }
     setPlanning(true);
+    setPlanningError(null);
     setRun(null);
     try {
       const goal = quest;
@@ -282,6 +285,7 @@ function QuestForgePage() {
       setPlannedTeam({
         ...res.team,
         policy: {
+          ...res.team.policy,
           max_llm_calls: res.team.policy?.max_llm_calls ?? 6,
           max_llm_cost_usd: res.team.policy?.max_llm_cost_usd ?? 0.2,
           work_style: workStyle,
@@ -292,14 +296,16 @@ function QuestForgePage() {
       setSelectedId(res.team.agents[0]?.id ?? null);
       toast.success("Your team has assembled.");
     } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : copy.toastPlanError);
+      const message = error instanceof ApiRequestError ? error.message : copy.toastPlanError;
+      setPlanningError(message);
+      toast.error(message);
     } finally {
       setPlanning(false);
     }
   };
 
   const saveChanges = async () => {
-    if (!plannedTeam || saving) return;
+    if (!plannedTeam || saving || planningError) return;
     setSaving(true);
     try {
       const saved = await saveTeam({ goal: quest, team: { ...plannedTeam, agents: baseAgents } });
@@ -348,7 +354,7 @@ function QuestForgePage() {
   };
 
   const startRun = async () => {
-    if (running) return;
+    if (running || planningError) return;
     if (!toyotaEnabled) {
       toast.error(
         "Enable Toyota customer context to run the mobility decision team, or dismiss it only after you finish planning a non-Toyota goal.",
@@ -372,6 +378,7 @@ function QuestForgePage() {
         summary: plannedTeam?.summary ?? quest.slice(0, 120),
         agents: baseAgents.map((agent) => ({ ...agent, portrait: "" })),
         policy: {
+          ...plannedTeam?.policy,
           max_llm_calls: plannedTeam?.policy?.max_llm_calls ?? 6,
           max_llm_cost_usd: plannedTeam?.policy?.max_llm_cost_usd ?? 0.2,
           work_style: workStyle,
@@ -484,7 +491,8 @@ function QuestForgePage() {
               <button
                 key={source.id}
                 type="button"
-                title={"description" in source ? source.description : source.label}
+                aria-pressed={enabled}
+                title={source.description || source.label}
                 disabled={!dismissible || planning || running}
                 onClick={() => dismissible && toggleContextSource(source.id)}
                 className={cn(
@@ -562,6 +570,7 @@ function QuestForgePage() {
               Customer
               <select
                 value={customerId}
+                disabled={running || planning}
                 onChange={(e) => setCustomerId(e.target.value)}
                 className="parchment-inset w-full max-w-full truncate px-2 py-2 text-xs text-ink outline-none focus:border-gold-dim sm:w-auto sm:py-1.5"
               >
@@ -600,6 +609,7 @@ function QuestForgePage() {
                 loadingTeam ||
                 uploading ||
                 deletingId !== null ||
+                Boolean(planningError) ||
                 !toyotaEnabled ||
                 customerError ||
                 customers.length === 0
@@ -641,6 +651,34 @@ function QuestForgePage() {
         )}
       </section>
 
+      {agents.length > 0 && toyotaEnabled && (
+        <section className="parchment-panel p-4" aria-label="Execution preview">
+          <h2 className="gold-heading text-lg font-bold">Before you run</h2>
+          <p className="mt-2 text-sm text-ink">
+            This demo evaluates one selected Toyota customer. It does not scan the portfolio or send offers.
+          </p>
+          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-ink">
+            <li>TOOL · Load synthetic Toyota profile, vehicle, lease and usage context.</li>
+            <li>CODE · Check relevance. If no decision is due, stop with NO_ACTION_NEEDED, without Nessie or an LLM.</li>
+            {nessieEnabled ? (
+              <>
+                <li>TOOL · Read Capital One Nessie banking data; CODE · derive financial summaries and score mobility options.</li>
+                <li>AGENT / LLM · Explain the scored options using derived summaries only; CODE · validate the result. A reviewer may run when policy requires it.</li>
+              </>
+            ) : (
+              <li>Nessie is off: context and relevance checks only. No financial recommendation will be generated.</li>
+            )}
+          </ol>
+          <p className="mt-3 text-xs text-ink-soft">Run enforces the submitted tools, permissions and budgets. Missing access fails; it is never added automatically.</p>
+        </section>
+      )}
+
+      {planningError && (
+        <p role="alert" className="parchment-panel p-4 text-sm text-destructive">
+          {planningError} Assemble successfully or reload a saved team before running or saving. Any team still displayed is from the previous plan.
+        </p>
+      )}
+
       {/* SECTION 2 — Team */}
       {agents.length > 0 && (
         <section>
@@ -649,7 +687,7 @@ function QuestForgePage() {
             <span className="text-xs text-muted-foreground">
               {agents.length} {copy.readySuffix}
             </span>
-            <Button variant="outline" onClick={saveChanges} disabled={saving || planning || running || loadingTeam || !plannedTeam}>
+            <Button variant="outline" onClick={saveChanges} disabled={Boolean(planningError) || saving || planning || running || loadingTeam || !plannedTeam}>
               {saving ? <Loader2 className="animate-spin" /> : <Save />} Save Team
             </Button>
           </div>
@@ -688,7 +726,7 @@ function QuestForgePage() {
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-display text-lg font-bold text-ink">{copy.outputs}</h3>
               <span className="chip-parchment !text-[10px] uppercase tracking-wider">
-                {isMockMode() ? copy.outputsBadge : copy.outputsBadgeLive}
+                {isMockMode() ? copy.outputsBadge : run?.tasks.some((task) => task.data_source === "NESSIE_FALLBACK") ? "Fixture banking data" : copy.outputsBadgeLive}
               </span>
             </div>
             {displayReward ? (

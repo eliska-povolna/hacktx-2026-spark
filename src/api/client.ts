@@ -298,6 +298,9 @@ export async function planTeam(
   if (res.fallback_used === true) {
     throw new ApiRequestError("Planner returned a fallback team.");
   }
+  if ((res as { execution_status?: string }).execution_status === "NEEDS_SETUP" || !res.team) {
+    throw new ApiRequestError("NEEDS_SETUP: This responsibility requires capabilities that are not connected. The runnable demo supports one Toyota customer's mobility decision.");
+  }
   return {
     ...res,
     team: {

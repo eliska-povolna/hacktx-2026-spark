@@ -57,6 +57,8 @@ export interface AgentDefinition {
 }
 
 export interface TeamPolicy {
+  workflow_kind?: string;
+  scope?: string;
   max_llm_calls: number;
   max_llm_cost_usd: number;
   work_style: WorkStyle;
