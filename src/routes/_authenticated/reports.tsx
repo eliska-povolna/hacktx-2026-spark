@@ -1,11 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Scroll, X } from "lucide-react";
+import { Loader2, Scroll } from "lucide-react";
 import { toast } from "sonner";
 
 import { getRun, getRuns, isMockMode } from "@/api/client";
 import type { Run, RunSummary } from "@/api/types";
 import { RunDetails } from "@/components/RunDetails";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { formatDate, formatDuration, formatMoney, humanize } from "@/lib/result-format";
 import { adaptMockText, THEME_COPY, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -51,6 +58,7 @@ function ReportsPage() {
     }
     let active = true;
     setDetailLoading(true);
+    setDetail(null);
     getRun(selectedId)
       .then((run) => {
         if (active) setDetail(run);
@@ -69,11 +77,19 @@ function ReportsPage() {
     };
   }, [selectedId]);
 
+  const openRun = (runId: string) => {
+    if (!runId) {
+      toast.error("This report has no run id.");
+      return;
+    }
+    setSelectedId(runId);
+  };
+
   return (
     <div className="mx-auto max-w-6xl">
       <h1 className="gold-heading text-3xl font-bold">{copy.pages.reportsTitle}</h1>
       <p className="mt-1 text-sm text-muted-foreground">{copy.pages.reportsSub}</p>
-      <p className="mt-2 text-xs text-ink-soft">Click a row to reopen the full run result (recommendation, outputs, tasks).</p>
+      <p className="mt-2 text-xs text-ink-soft">Open a report to see the full run result (recommendation, outputs, tasks).</p>
 
       {loading && (
         <p role="status" className="mt-6 text-muted-foreground">
@@ -90,7 +106,7 @@ function ReportsPage() {
       )}
       {runs.length > 0 && (
         <div className="parchment-panel mt-6 overflow-x-auto p-2 sm:p-4">
-          <table className="w-full min-w-[720px] text-sm">
+          <table className="w-full min-w-[780px] text-sm">
             <thead>
               <tr className="border-b border-gold-dim/50 text-left font-display text-xs uppercase tracking-wide text-ink-soft">
                 <th className="px-3 py-2">{copy.reportGoalCol}</th>
@@ -100,6 +116,7 @@ function ReportsPage() {
                 <th className="px-3 py-2">Duration</th>
                 <th className="px-3 py-2">AI cost</th>
                 <th className="px-3 py-2">LLM calls</th>
+                <th className="px-3 py-2 text-right"> </th>
               </tr>
             </thead>
             <tbody>
@@ -107,18 +124,9 @@ function ReportsPage() {
                 const active = selectedId === run.run_id;
                 return (
                   <tr
-                    key={run.run_id}
-                    tabIndex={0}
-                    aria-selected={active}
-                    onClick={() => setSelectedId(run.run_id)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        setSelectedId(run.run_id);
-                      }
-                    }}
+                    key={run.run_id || run.goal}
                     className={cn(
-                      "cursor-pointer border-b border-gold-dim/25 text-ink last:border-0 hover:bg-gold-dim/10",
+                      "border-b border-gold-dim/25 text-ink last:border-0 hover:bg-gold-dim/10",
                       active && "bg-gold-dim/15",
                     )}
                   >
@@ -154,6 +162,15 @@ function ReportsPage() {
                     <td className="px-3 py-3 text-ink-soft">{formatDuration(run.duration_ms)}</td>
                     <td className="px-3 py-3 font-semibold">{formatMoney(run.estimated_ai_cost_usd)}</td>
                     <td className="px-3 py-3 font-semibold">{run.llm_calls ?? "—"}</td>
+                    <td className="px-3 py-3 text-right">
+                      <button
+                        type="button"
+                        className="btn-outline-gold px-3 py-1.5 text-xs !text-ink"
+                        onClick={() => openRun(run.run_id)}
+                      >
+                        Open
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -163,21 +180,14 @@ function ReportsPage() {
       )}
       <p className="mt-2 text-right text-[11px] italic text-muted-foreground sm:hidden">Swipe to view more →</p>
 
-      {selectedId && (
-        <section className="parchment-panel mt-6 p-4 sm:p-5" aria-label="Selected run details">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h2 className="gold-heading text-xl font-bold">Run detail</h2>
-              <p className="font-mono text-xs text-ink-soft">{selectedId}</p>
-            </div>
-            <button
-              type="button"
-              className="btn-outline-gold inline-flex items-center gap-1 px-3 py-1.5 text-xs !text-ink"
-              onClick={() => setSelectedId(null)}
-            >
-              <X className="h-3.5 w-3.5" /> Close
-            </button>
-          </div>
+      <Dialog open={Boolean(selectedId)} onOpenChange={(open) => !open && setSelectedId(null)}>
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto border-gold-dim/40 bg-parchment text-ink sm:rounded-xl">
+          <DialogHeader>
+            <DialogTitle className="gold-heading text-xl font-bold">Run detail</DialogTitle>
+            <DialogDescription className="font-mono text-xs text-ink-soft">
+              {selectedId ?? "—"}
+            </DialogDescription>
+          </DialogHeader>
           {detailLoading && (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" /> Loading run…
@@ -193,8 +203,8 @@ function ReportsPage() {
           {!detailLoading && !detail && (
             <p className="text-sm text-destructive">This run could not be restored.</p>
           )}
-        </section>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
