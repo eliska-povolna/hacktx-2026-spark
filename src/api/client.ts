@@ -4,24 +4,40 @@
 // Mock mode is on by default. To switch to the real backend:
 //   VITE_USE_MOCK_API=false
 //   VITE_API_BASE_URL=https://questmaster.tech/api
+//
+// The real backend contract lives in docs/QuestMaster_API_SPEC.md.
+// Backend runs return `recommendation` + `audit_events`; normalizeRun()
+// maps them onto the frontend Run shape (reward + log), so POST /api/runs
+// returning only { run_id, status: "PLANNING" } is fine — the result
+// arrives via polling GET /api/runs/{run_id}.
 
 import {
   MOCK_AGENTS,
+  MOCK_CUSTOMERS,
   MOCK_INTEGRATIONS,
   MOCK_LOG,
   MOCK_LOG_EVENTS,
   MOCK_METRICS,
   MOCK_PARTIES,
   MOCK_REWARD,
+  MOCK_REWARD_STRESSED,
   MOCK_RUN_HISTORY,
   MOCK_RUN_TASKS,
+  PORTRAITS,
 } from "./mockData";
 import type {
+  AgentDefinition,
+  BackendRun,
+  CreateRunInput,
+  DemoCustomer,
   DemoSession,
   Integration,
   LogEvent,
   PlanTeamResponse,
+  QuestLogEntry,
+  QuestReward,
   Run,
+  RunMetrics,
   RunStatus,
   RunSummary,
   RunTask,
@@ -30,7 +46,7 @@ import type {
 } from "./types";
 
 const USE_MOCK = (import.meta.env["VITE_USE_MOCK_API"] ?? "true") !== "false";
-const API_BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "http://localhost:8000/api";
+const API_BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "https://questmaster.tech/api";
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -59,20 +75,113 @@ export function getApiBaseUrl(): string {
   return API_BASE_URL;
 }
 
+// The backend does not implement /demo-session — the hackathon session is
+// client-side only (API_SPEC §5 allows this).
 export async function createDemoSession(): Promise<DemoSession> {
-  if (USE_MOCK) {
-    await mockDelay();
+  await mockDelay();
+  return {
+    user: {
+      id: "demo-user",
+      name: "Avery",
+      organization: "QuestMaster Guild",
+      role: "Quest Master",
+    },
+    workspace_id: "questmaster-demo",
+  };
+}
+
+// The backend never sends portraits or descriptions (API_SPEC §3.3):
+// fill the portrait from the local PORTRAITS set (matched by agent name or
+// id) and fall back to `purpose` for the description.
+export function normalizeAgents(agents: Partial<AgentDefinition>[]): AgentDefinition[] {
+  return agents.map((agent, i) => {
+    const name = agent.name ?? `Agent ${i + 1}`;
+    const key = name.toLowerCase();
+    const purpose = agent.purpose ?? "";
     return {
-      user: {
-        id: "demo-user",
-        name: "Avery",
-        organization: "QuestMaster Guild",
-        role: "Quest Master",
-      },
-      workspace_id: "questmaster-demo",
+      id: agent.id ?? `agent-${i + 1}`,
+      name,
+      role: agent.role ?? "Specialist",
+      purpose,
+      description: agent.description || purpose,
+      skills: agent.skills ?? [],
+      instructions: agent.instructions ?? "",
+      allowed_tools: agent.allowed_tools ?? [],
+      permissions: agent.permissions ?? { data_scopes: [], actions: [] },
+      guardrails: agent.guardrails ?? [],
+      model_policy: agent.model_policy ?? "auto",
+      budget: agent.budget ?? { max_llm_cost_usd: 0.05, max_llm_calls: 2 },
+      estimated_cost_usd: agent.estimated_cost_usd ?? 0,
+      portrait: agent.portrait || PORTRAITS[key] || PORTRAITS[agent.id ?? ""] || "",
     };
-  }
-  return request<DemoSession>("/demo-session", { method: "POST", body: "{}" });
+  });
+}
+
+function formatLogTimestamp(raw: string): string {
+  return raw.includes("T") ? raw.slice(11, 19) : raw;
+}
+
+// Map a raw backend run (API_SPEC §10) onto the frontend Run shape.
+export function normalizeRun(raw: BackendRun): Run {
+  const tasks: RunTask[] = (raw.tasks ?? []).map((task, i) => ({
+    id: task.id ?? `task-${i + 1}`,
+    name: task.name ?? `Task ${i + 1}`,
+    assigned_agent_id: task.assigned_agent_id ?? "",
+    executor: task.executor ?? "TOOL",
+    action: task.action ?? "",
+    depends_on: task.depends_on ?? [],
+    risk_level: task.risk_level ?? "medium",
+    status: task.status ?? "WAITING",
+    activity_summary: task.activity_summary ?? "",
+    tool: task.tool ?? null,
+    duration_ms: task.duration_ms ?? null,
+    cost_usd: task.cost_usd ?? 0,
+    data_source: task.data_source ?? "LOCAL_CODE",
+  }));
+
+  const metrics: RunMetrics = {
+    llm_calls: 0,
+    llm_calls_avoided: 0,
+    input_tokens: 0,
+    output_tokens: 0,
+    estimated_ai_cost_usd: 0,
+    estimated_baseline_cost_usd: 0,
+    estimated_cost_saved_usd: 0,
+    code_tasks: 0,
+    tool_tasks: 0,
+    llm_tasks: 0,
+    ...raw.metrics,
+  };
+
+  const recommendation = raw.recommendation;
+  const reward: QuestReward | null = recommendation
+    ? {
+        id: `rec-${raw.run_id}`,
+        title: recommendation.headline,
+        confidence: recommendation.confidence,
+        summary: recommendation.summary,
+        reasons: recommendation.reasons ?? [],
+      }
+    : null;
+
+  const log: QuestLogEntry[] = (raw.audit_events ?? []).map((event) => ({
+    id: event.id,
+    timestamp: formatLogTimestamp(event.timestamp),
+    message: event.message,
+    executor: event.executor_type ?? "TOOL",
+  }));
+
+  return {
+    run_id: raw.run_id,
+    status: raw.status,
+    goal: raw.goal,
+    created_at: raw.created_at,
+    updated_at: raw.updated_at,
+    tasks,
+    metrics,
+    reward,
+    log,
+  };
 }
 
 export async function planTeam(goal: string): Promise<PlanTeamResponse> {
@@ -89,22 +198,38 @@ export async function planTeam(goal: string): Promise<PlanTeamResponse> {
       fallback_used: false,
     };
   }
-  return request<PlanTeamResponse>("/teams/plan", {
+  const res = await request<PlanTeamResponse>("/teams/plan", {
     method: "POST",
     body: JSON.stringify({ goal, max_team_size: 5, budget_preference: "balanced" }),
   });
+  return { ...res, team: { ...res.team, agents: normalizeAgents(res.team.agents) } };
+}
+
+export async function getDemoCustomers(): Promise<DemoCustomer[]> {
+  if (USE_MOCK) {
+    await mockDelay();
+    return MOCK_CUSTOMERS;
+  }
+  const res = await request<{ customers: DemoCustomer[] }>("/demo/customers");
+  return res.customers;
+}
+
+export async function getHealth(): Promise<{ status: string; service?: string; version?: string }> {
+  return request<{ status: string; service?: string; version?: string }>("/health");
 }
 
 // ---- Mock run execution ----
 // Simulates PLANNING → RUNNING → REVIEWING → COMPLETED with tasks
-// transitioning over time. The real backend will expose the same shape
-// via POST /api/runs + polling GET /api/runs/:run_id.
+// transitioning over time. The real backend exposes the same flow via
+// POST /api/runs (202 → { run_id, status: "PLANNING" }) + polling
+// GET /api/runs/{run_id} until a terminal status.
 
 const TASK_STEP_MS = 900;
 
 interface MockRunState {
   run: Run;
   startedAt: number;
+  customerId: string;
 }
 
 const mockRuns = new Map<string, MockRunState>();
@@ -159,7 +284,7 @@ function advanceMockRun(state: MockRunState): Run {
   let status: RunStatus = "PLANNING";
   if (step >= totalSteps) {
     status = "COMPLETED";
-    run.reward = MOCK_REWARD;
+    run.reward = state.customerId === "customer-stressed" ? MOCK_REWARD_STRESSED : MOCK_REWARD;
     run.metrics = { ...MOCK_METRICS };
     run.log = [...MOCK_LOG];
   } else if (step >= run.tasks.length + 1) {
@@ -171,16 +296,25 @@ function advanceMockRun(state: MockRunState): Run {
   return run;
 }
 
-export async function createRun(goal: string): Promise<{ run_id: string; status: RunStatus }> {
+export async function createRun(input: CreateRunInput): Promise<{ run_id: string; status: RunStatus }> {
   if (USE_MOCK) {
     await delay(400);
-    const run = buildMockRun(goal);
-    mockRuns.set(run.run_id, { run, startedAt: Date.now() });
+    const run = buildMockRun(input.goal);
+    mockRuns.set(run.run_id, { run, startedAt: Date.now(), customerId: input.customerId });
     return { run_id: run.run_id, status: run.status };
   }
+  // API_SPEC §9: the backend expects the full payload — goal, the whole team
+  // object from planTeam, and the demo customer in context. The 202 response
+  // carries only { run_id, status: "PLANNING" }; the recommendation arrives
+  // later via polling.
   return request<{ run_id: string; status: RunStatus }>("/runs", {
     method: "POST",
-    body: JSON.stringify({ goal, quality_mode: "normal" }),
+    body: JSON.stringify({
+      goal: input.goal,
+      team: input.team,
+      context: { customer_id: input.customerId },
+      quality_mode: "normal",
+    }),
   });
 }
 
@@ -191,7 +325,8 @@ export async function getRun(runId: string): Promise<Run> {
     await delay(120);
     return { ...advanceMockRun(state) };
   }
-  return request<Run>(`/runs/${runId}`);
+  const raw = await request<BackendRun>(`/runs/${runId}`);
+  return normalizeRun(raw);
 }
 
 export async function getRuns(): Promise<RunSummary[]> {

@@ -14,8 +14,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { createRun, getRun, planTeam } from "@/api/client";
-import type { AgentDefinition, Run } from "@/api/types";
+import { createRun, getDemoCustomers, getRun, isMockMode, planTeam } from "@/api/client";
+import type { AgentDefinition, DemoCustomer, Run, TeamDefinition } from "@/api/types";
 import { AdventurerCard } from "@/components/AdventurerCard";
 import { CharacterSheet } from "@/components/CharacterSheet";
 import { ConfigureAdventurerDialog } from "@/components/ConfigureAdventurerDialog";
@@ -66,6 +66,9 @@ function QuestForgePage() {
   const [configureId, setConfigureId] = useState<string | null>(null);
   const [run, setRun] = useState<Run | null>(null);
   const [running, setRunning] = useState(false);
+  const [plannedTeam, setPlannedTeam] = useState<TeamDefinition | null>(null);
+  const [customers, setCustomers] = useState<DemoCustomer[]>([]);
+  const [customerId, setCustomerId] = useState("customer-stable");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const selected = agents.find((a) => a.id === selectedId) ?? null;
@@ -76,6 +79,21 @@ function QuestForgePage() {
   useEffect(() => {
     setQuest(THEME_COPY[theme].sampleQuest);
   }, [theme]);
+
+  // Demo customers for the run context (API_SPEC §8).
+  useEffect(() => {
+    getDemoCustomers()
+      .then((list) => {
+        setCustomers(list);
+        if (list.length > 0 && !list.some((c) => c.id === customerId)) {
+          setCustomerId(list[0]?.id ?? "customer-stable");
+        }
+      })
+      .catch(() => {
+        // Customer list is optional in mock/offline mode — keep the default.
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -93,6 +111,7 @@ function QuestForgePage() {
     try {
       const res = await planTeam(quest);
       const themedAgents = getAgentsForTheme(theme, res.team.agents);
+      setPlannedTeam(res.team);
       setAgents(res.team.agents);
       setSelectedId(themedAgents[0]?.id ?? null);
       toast.success("Your team has assembled.");
@@ -108,12 +127,21 @@ function QuestForgePage() {
     setRunning(true);
     setRun(null);
     try {
-      const { run_id } = await createRun(quest);
+      // API_SPEC §9: send the full payload — goal, the whole team (including
+      // any edits/removals/custom agents), and the selected demo customer.
+      const team: TeamDefinition = {
+        id: plannedTeam?.id ?? "custom-team",
+        team_name: plannedTeam?.team_name ?? "Custom Team",
+        summary: plannedTeam?.summary ?? quest.slice(0, 120),
+        agents: baseAgents,
+      };
+      const { run_id } = await createRun({ goal: quest, team, customerId });
       pollRef.current = setInterval(async () => {
         try {
           const next = await getRun(run_id);
           // Toyota demo overlay: presentation-only mock result for this theme.
-          if (theme === "toyota" && next.status === "COMPLETED") {
+          // In real-backend mode the recommendation comes from the run itself.
+          if (isMockMode() && theme === "toyota" && next.status === "COMPLETED") {
             next.reward = TOYOTA_REWARD;
             next.metrics = TOYOTA_METRICS;
           }
@@ -197,7 +225,23 @@ function QuestForgePage() {
           >
             <Plus className="h-3 w-3" /> Add Files
           </button>
-          <div className="ms-auto flex gap-2">
+          <div className="ms-auto flex flex-wrap items-center gap-2">
+            {agents.length > 0 && customers.length > 0 && (
+              <label className="flex items-center gap-2 text-xs font-semibold text-ink-soft">
+                Customer
+                <select
+                  value={customerId}
+                  onChange={(e) => setCustomerId(e.target.value)}
+                  className="parchment-inset px-2 py-1.5 text-xs text-ink outline-none focus:border-gold-dim"
+                >
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name} — {customer.scenario_label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             {agents.length > 0 && (
               <button
                 onClick={startRun}
