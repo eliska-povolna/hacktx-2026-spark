@@ -3,15 +3,16 @@ import { useState, type FormEvent } from "react";
 
 import { CrestLogo } from "@/components/CrestLogo";
 import { useAuth } from "@/lib/auth";
+import { DEMO_AUTH_NOTE, THEME_COPY, useTheme } from "@/lib/theme";
 import bgRealm from "@/assets/bg-realm.jpg";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
       { title: "Reset Password — QuestMaster" },
-      { name: "description", content: "Recover your QuestMaster guild access." },
+      { name: "description", content: "Recover your QuestMaster account access." },
       { property: "og:title", content: "Reset Password — QuestMaster" },
-      { property: "og:description", content: "Recover your QuestMaster guild access." },
+      { property: "og:description", content: "Recover your QuestMaster account access." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -21,6 +22,8 @@ export const Route = createFileRoute("/reset-password")({
 
 function ResetPasswordPage() {
   const { resetPassword } = useAuth();
+  const { theme } = useTheme();
+  const copy = THEME_COPY[theme];
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -63,16 +66,16 @@ function ResetPasswordPage() {
         alt=""
         width={1920}
         height={1088}
-        className="fixed inset-0 -z-10 h-full w-full object-cover"
+        className="fantasy-only fixed inset-0 -z-10 h-full w-full object-cover"
       />
-      <div className="fixed inset-0 -z-10 bg-black/55" />
+      <div className="fantasy-only fixed inset-0 -z-10 bg-black/55" />
 
       <div className="parchment-panel w-full max-w-md p-8">
         <div className="mb-6 flex flex-col items-center text-center">
           <CrestLogo className="mb-3 h-14 w-14 text-gold-dim" />
-          <h1 className="font-display text-2xl font-bold text-ink">Recover Your Seal</h1>
+          <h1 className="font-display text-2xl font-bold text-ink">{copy.auth.resetTitle}</h1>
           <p className="mt-1 text-sm text-ink-soft">
-            Set a new password for your guild account.
+            {copy.auth.resetSub}
           </p>
         </div>
 
@@ -136,9 +139,10 @@ function ResetPasswordPage() {
         <p className="text-center text-sm text-ink-soft">
           Remembered it after all?{" "}
           <Link to="/" className="font-semibold text-crimson hover:underline">
-            Enter the Guild
+            {copy.auth.signInButton}
           </Link>
         </p>
+        <p className="mt-3 text-center text-[11px] italic text-ink-soft">{DEMO_AUTH_NOTE}</p>
       </div>
     </div>
   );
