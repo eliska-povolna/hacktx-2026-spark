@@ -462,6 +462,10 @@
   .quest-sidebar .sidebar-saved-parties {
     padding-top: 0.75rem;
   }
+  .quest-sidebar .sidebar-saved-parties a {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
   .quest-sidebar .sidebar-quote {
     display: none;
   }
