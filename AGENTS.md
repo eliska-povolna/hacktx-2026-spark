@@ -17,3 +17,4 @@
 - All API access goes through `src/api/client.ts` (mock mode via `VITE_USE_MOCK_API=true`); components never fetch directly. Why: switching to the real backend must only require env changes, per `docs/QuestMaster_API_SPEC.md`.
 - Fantasy UI uses reusable `@utility` classes in `src/styles.css` (parchment-panel, btn-crimson, chip-parchment, arcane-selected, gold-heading, wood-panel). Why: one parchment/panel system instead of per-component decoration.
 - Keep team configuration canonical and derive themed portraits/role overlays at render time; custom IDs encode a stable portrait identity resolved centrally in the theme module. Why: switching styles must not replace teams, lose custom agents, or persist themed portraits into another style.
+- Keep the theme context in its own asset-independent module and preserve its identity through Vite hot updates. Why: portrait/data edits must not disconnect mounted providers from consumers and blank the preview.

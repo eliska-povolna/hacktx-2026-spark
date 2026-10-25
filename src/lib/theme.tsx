@@ -4,14 +4,8 @@
 // `data-theme` attribute on <html>; all visual adaptation happens through
 // CSS variables in src/styles.css. Copy differences live in THEME_COPY below.
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import type { AppTheme } from "./theme-context";
+export { ThemeProvider, useTheme, readTheme, type AppTheme } from "./theme-context";
 
 import { MOCK_AGENTS, PORTRAITS } from "@/api/mockData";
 import type { AgentDefinition, QuestReward, RunMetrics } from "@/api/types";
@@ -32,57 +26,6 @@ import proAmara from "@/assets/pro-amara.jpg";
 import proKenji from "@/assets/pro-kenji.jpg";
 import toyotaAmara from "@/assets/toyota-amara.jpg";
 import toyotaKenji from "@/assets/toyota-kenji.jpg";
-
-export type AppTheme = "fantasy" | "professional" | "toyota";
-
-const THEME_KEY = "questmaster.theme";
-
-export function readTheme(): AppTheme {
-  try {
-    const raw = localStorage.getItem(THEME_KEY);
-    return raw === "professional" || raw === "toyota" ? raw : "fantasy";
-  } catch {
-    return "fantasy";
-  }
-}
-
-interface ThemeContextValue {
-  theme: AppTheme;
-  setTheme: (theme: AppTheme) => void;
-}
-
-const ThemeContext = createContext<ThemeContextValue | null>(null);
-
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<AppTheme>("fantasy");
-
-  useEffect(() => {
-    setThemeState(readTheme());
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.dataset["theme"] = theme;
-  }, [theme]);
-
-  const setTheme = useCallback((next: AppTheme) => {
-    try {
-      localStorage.setItem(THEME_KEY, next);
-    } catch {
-      // storage unavailable — theme still applies for this session
-    }
-    setThemeState(next);
-  }, []);
-
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>
-  );
-}
-
-export function useTheme(): ThemeContextValue {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
-  return ctx;
-}
 
 // ---- Terminology / label map ----
 
