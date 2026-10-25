@@ -330,7 +330,7 @@ export async function getSavedTeam(id: string): Promise<SavedTeam> {
 }
 
 export async function saveTeam(input: SaveTeamInput): Promise<SavedParty> {
-  const team = { id: input.team.id, team_name: input.team.team_name, summary: input.team.summary,
+  const team = { id: input.team.id, team_name: input.team.team_name, summary: input.team.summary, policy: input.team.policy,
     agents: input.team.agents.map(({ portrait: _portrait, customized: _customized, ...agent }) => ({ ...agent, portrait: "" })) };
   const res = await request<SavedTeamSummary>("/teams", {
     method: "POST", body: JSON.stringify({ goal: input.goal, team }),
