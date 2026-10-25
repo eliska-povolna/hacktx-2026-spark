@@ -46,7 +46,7 @@ import type {
   TaskStatus,
 } from "./types";
 import type { PlanningInterface, SavedTeam, SavedTeamSummary, SaveTeamInput } from "./types";
-import { assignFunctionPortraits, getPortrait, getSampleAgentsForTheme, getThemePortraitByIndex } from "@/lib/theme";
+import { assignFunctionIdentities, FUNCTION_NAMES, getPortrait, getSampleAgentsForTheme, getThemePortraitByIndex } from "@/lib/theme";
 
 const USE_MOCK = (import.meta.env["VITE_USE_MOCK_API"] ?? "false") === "true";
 const API_BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "https://questmaster.tech/api";
@@ -137,7 +137,7 @@ export function normalizeAgents(agents: Partial<AgentDefinition>[], theme: Plann
   return withIds.map((agent, i) => {
     const purpose = agent.purpose ?? "";
     const identity = identities[i];
-    const personaName = identity ? FUNCTION_NAMES[identity.key as AgentFunctionKey] : undefined;
+    const personaName = identity ? FUNCTION_NAMES[identity.key as keyof typeof FUNCTION_NAMES] : undefined;
     const keepName = CANONICAL_NAMES.has(agent.name);
     return {
       id: agent.id,
