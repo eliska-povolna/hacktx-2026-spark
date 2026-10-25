@@ -4,7 +4,9 @@ import { createCustomAgent, getAgentsForTheme, getPortrait } from "@/lib/theme";
 
 describe("Agent identities across interface styles", () => {
   it("preserves every generated configuration field across all interfaces", () => {
-    const generated = [{ ...MOCK_AGENTS[0], id: "maya", name: "Generated Feedback Analyst", role: "Hospitality Analyst",
+    const original = MOCK_AGENTS[0];
+    if (!original) throw new Error("Missing agent fixture");
+    const generated = [{ ...original, id: "maya", name: "Generated Feedback Analyst", role: "Hospitality Analyst",
       skills: ["Guest feedback"], allowed_tools: ["feedback_reader"],
       permissions: { data_scopes: ["guest_feedback"], actions: ["read"] } }];
     for (const theme of ["fantasy", "professional", "toyota"] as const) {
