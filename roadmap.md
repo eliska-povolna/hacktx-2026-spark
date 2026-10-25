@@ -16,5 +16,8 @@
 - [x] VITE_API_BASE_URL=https://questmaster.tech/api (never raw IP:8000 — Caddy exposes only HTTPS)
 
 ## Open
-- Flip VITE_USE_MOCK_API=false once the backend is live at questmaster.tech
-- Eliška must add the frontend origin (Lovable preview/published URL) to the backend's CORS_ORIGINS
+- [x] VITE_USE_MOCK_API=false (live backend at questmaster.tech, verified 2026-10-25: /health, /demo/customers, POST /teams/plan all work)
+- Eliška must add the frontend origins to the backend's CORS_ORIGINS — server currently allows only https://questmaster.tech; browser calls from Lovable are blocked:
+  - https://hacktx-2026-spark.lovable.app (published/primary)
+  - https://id-preview--1822652e-47c8-4da8-ba55-6c900a2db286.lovable.app (preview)
+  - (optional, local dev) http://localhost:8080
