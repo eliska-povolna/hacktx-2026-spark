@@ -73,10 +73,14 @@ function readAccounts(): StoredAccount[] {
     const raw = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) ?? "[]") as unknown[];
     // Drop any legacy plaintext-password entries instead of migrating them:
     // demo accounts are disposable, and plaintext must not linger in storage.
-    return raw.filter(
+    const valid = raw.filter(
       (a): a is StoredAccount =>
         typeof a === "object" && a !== null && typeof (a as StoredAccount).passHash === "string",
     );
+    // Rewrite storage without the legacy entries so the old passwords are
+    // gone for good (never logged or exposed).
+    if (valid.length !== raw.length) writeAccounts(valid);
+    return valid;
   } catch {
     return [];
   }

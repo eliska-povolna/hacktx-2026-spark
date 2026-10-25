@@ -95,7 +95,7 @@ function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="parchment-inset w-full px-3 py-2 text-sm text-ink outline-none focus:border-gold-dim"
-              placeholder="you@guild.example"
+              placeholder={copy.emailPlaceholder}
             />
           </div>
           <div>

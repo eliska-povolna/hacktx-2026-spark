@@ -81,8 +81,13 @@ export interface ThemeCopy {
     resetSub: string;
   };
   toastPlanError: string;
+  toastNoGoal: string;
+  toastRunError: string;
   toastAgentRemoved: (name: string) => string;
   toastTeamRemoved: (name: string) => string;
+  /** Themed profile title shown under the user name (presentation only). */
+  userTitle: string;
+  emailPlaceholder: string;
   openTeam: string;
   openTeamHint: string;
   reportGoalCol: string;
@@ -154,6 +159,10 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
       resetSub: "Set a new password for your guild account.",
     },
     toastPlanError: "The guild archives could not be reached.",
+    toastNoGoal: "Describe your quest first.",
+    toastRunError: "The quest could not be started.",
+    userTitle: "Quest Master",
+    emailPlaceholder: "you@guild.example",
     toastAgentRemoved: (name) => `${name} has been dismissed from the party.`,
     toastTeamRemoved: (name) => `${name} disbanded.`,
     openTeam: "Open Party",
@@ -222,6 +231,10 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
       resetSub: "Set a new password for your account.",
     },
     toastPlanError: "The planning service could not be reached.",
+    toastNoGoal: "Describe your goal first.",
+    toastRunError: "The run could not be started.",
+    userTitle: "Team Owner",
+    emailPlaceholder: "you@company.com",
     toastAgentRemoved: (name) => `${name} has been removed from the team.`,
     toastTeamRemoved: (name) => `${name} deleted.`,
     openTeam: "Open Team",
@@ -290,6 +303,10 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
       resetSub: "Set a new password for your account.",
     },
     toastPlanError: "The planning service could not be reached.",
+    toastNoGoal: "Describe the decision you need first.",
+    toastRunError: "The decision run could not be started.",
+    userTitle: "Decision Workspace Owner",
+    emailPlaceholder: "you@toyota.example",
     toastAgentRemoved: (name) => `${name} has been removed from the decision team.`,
     toastTeamRemoved: (name) => `${name} deleted.`,
     openTeam: "Open Team",
@@ -316,15 +333,83 @@ export const THEME_OPTIONS: { value: AppTheme; label: string }[] = [
   { value: "toyota", label: "● Toyota" },
 ];
 
-// ---- Toyota demo content (presentation-only mock overlay) ----
+// ---- Theme presentation overlays for agents (presentation only) ----
+// Same underlying agent IDs and architecture — only the displayed role,
+// skills, tools and data scopes change. Applied in getAgentsForTheme and
+// skipped for agents the user explicitly customized.
 
-const TOYOTA_ROLES: Record<string, { role: string; skills: string[] }> = {
-  maya: { role: "Financial Context Analyst", skills: ["Affordability", "Cash Flow", "Forecasting", "Risk Assessment"] },
-  rowan: { role: "Customer Context Analyst", skills: ["Usage Analysis", "Data Gathering", "Research", "Summarize"] },
-  brann: { role: "Vehicle & Mobility Analyst", skills: ["Vehicle Fit", "Usage Analysis", "Optimization", "Pattern Recognition"] },
-  selene: { role: "Decision Specialist", skills: ["Trade-offs", "Recommendation", "Modeling", "Strategy"] },
-  odo: { role: "Policy & Quality Reviewer", skills: ["Policy", "Validation", "Safety", "Quality"] },
+interface ThemeAgentPresentation {
+  role?: string;
+  skills?: string[];
+  tools?: string[];
+  scopes?: string[];
+}
+
+const PRO_PRESENTATION: Record<string, ThemeAgentPresentation> = {
+  maya: {
+    tools: ["Financial Data Reader", "Document Search", "Trend Analysis", "Cost Calculator", "Report Builder"],
+    scopes: ["customer_feedback", "financial_data", "competitor_notes", "policies"],
+  },
+  rowan: {
+    role: "Research Analyst",
+    tools: ["Web Search", "Document Search", "External Research"],
+    scopes: ["customer_feedback", "competitor_notes"],
+  },
+  brann: {
+    tools: ["Process Mapper", "Cost Calculator", "Pattern Lens"],
+    scopes: ["financial_data", "policies"],
+  },
+  selene: {
+    role: "Decision Analyst",
+    tools: ["Decision Model", "Trend Analysis", "Report Builder"],
+    scopes: ["financial_summary", "competitor_notes"],
+  },
+  odo: {
+    tools: ["Policy Reference", "Validation Checks"],
+    scopes: ["policies", "financial_summary"],
+  },
 };
+
+// Toyota specialists: realistic tools and least-privilege data scopes.
+// Downstream agents see derived context only — never raw financial
+// transactions (Decision Specialist gets financial_context summaries,
+// the Reviewer gets derived_financial_context).
+const TOYOTA_PRESENTATION: Record<string, ThemeAgentPresentation> = {
+  maya: {
+    role: "Financial Context Analyst",
+    skills: ["Affordability", "Cash Flow", "Forecasting", "Risk Assessment"],
+    tools: ["Capital One Nessie", "Financial Calculator", "Financial Context Builder"],
+    scopes: ["financial_context", "approved_financial_data"],
+  },
+  rowan: {
+    role: "Customer Context Analyst",
+    skills: ["Usage Analysis", "Data Gathering", "Research", "Summarize"],
+    tools: ["Customer Profile", "Usage Data"],
+    scopes: ["customer_profile", "usage_data"],
+  },
+  brann: {
+    role: "Vehicle & Mobility Analyst",
+    skills: ["Vehicle Fit", "Usage Analysis", "Optimization", "Pattern Recognition"],
+    tools: ["Toyota Vehicle Data", "Contract Data"],
+    scopes: ["vehicle_data", "contract_data", "usage_data"],
+  },
+  selene: {
+    role: "Decision Specialist",
+    skills: ["Trade-offs", "Recommendation", "Modeling", "Strategy"],
+    tools: ["Decision Model", "Recommendation Builder"],
+    scopes: ["financial_context", "vehicle_summary", "customer_context"],
+  },
+  odo: {
+    role: "Policy & Quality Reviewer",
+    skills: ["Policy", "Validation", "Safety", "Quality"],
+    tools: ["Policy Validator", "Safety Checks"],
+    scopes: ["policy_data", "derived_financial_context"],
+  },
+};
+
+const TOYOTA_ROLES: Record<string, { role: string; skills: string[] }> = Object.fromEntries(
+  Object.entries(TOYOTA_PRESENTATION).map(([id, p]) => [id, { role: p.role ?? "", skills: p.skills ?? [] }]),
+);
 
 export const TOYOTA_AGENTS: AgentDefinition[] = MOCK_AGENTS.map((agent) => {
   const override = TOYOTA_ROLES[agent.id];
@@ -412,9 +497,71 @@ export const TOYOTA_METRICS: RunMetrics = {
 };
 
 export function getAgentsForTheme(theme: AppTheme, agents: AgentDefinition[]): AgentDefinition[] {
-  return agents.map((agent) => ({
-    ...agent,
-    ...(theme === "toyota" ? TOYOTA_ROLES[agent.id] : undefined),
-    portrait: getPortrait(theme, agent.id) || agent.portrait,
-  }));
+  const presentation =
+    theme === "toyota" ? TOYOTA_PRESENTATION : theme === "professional" ? PRO_PRESENTATION : undefined;
+  return agents.map((agent) => {
+    // User-edited agents keep their own role/skills/tools/scopes — theme
+    // defaults apply only to untouched agents. Portraits always follow the
+    // active theme (they are derived, never edited).
+    const override = agent.customized ? undefined : presentation?.[agent.id];
+    return {
+      ...agent,
+      ...(override?.role ? { role: override.role } : undefined),
+      ...(override?.skills ? { skills: override.skills } : undefined),
+      ...(override?.tools ? { allowed_tools: override.tools } : undefined),
+      ...(override?.scopes
+        ? { permissions: { ...agent.permissions, data_scopes: override.scopes } }
+        : undefined),
+      portrait: getPortrait(theme, agent.id) || agent.portrait,
+    };
+  });
+}
+
+// ---- Mock-content text adapter (presentation only) ----
+// Teams / Reports / Logs share one mock dataset; these ordered replacement
+// pairs re-label the fantasy wording for the non-fantasy themes so each
+// interface reads naturally without duplicating the data.
+
+const MOCK_TEXT_ADAPTATIONS: Record<Exclude<AppTheme, "fantasy">, [string, string][]> = {
+  professional: [
+    ["Merchant Insight Party", "Customer Insight Team"],
+    ["Support Guild", "Support Operations Team"],
+    ["Market Watchers", "Market Analysis Team"],
+    ["Moonlit Griffin Inn", "our flagship customer account"],
+    ["Silver Stag Lodge", "the support organization"],
+    ["Ember Fox Tavern", "the key account"],
+    ["Scroll Archive", "Document Search"],
+    ["Compass Queries", "External Research"],
+    ["Ledger Reader", "Financial Data Reader"],
+    ["guest feedback", "customer feedback"],
+    ["Party assembled: 5 adventurers ready", "Team assembled: 5 agents ready"],
+    ["Adventurer completed task", "Agent completed task"],
+    ["Quest created", "Run created"],
+    ["Quest completed: reward revealed", "Run completed: result ready"],
+    ["Quest Master", "Team Owner"],
+  ],
+  toyota: [
+    ["Merchant Insight Party", "Mobility Decision Team"],
+    ["Support Guild", "Customer Context Team"],
+    ["Market Watchers", "Mobility Analysis Team"],
+    ["Moonlit Griffin Inn", "the selected Toyota customer"],
+    ["Silver Stag Lodge", "the customer support program"],
+    ["Ember Fox Tavern", "the mobility portfolio"],
+    ["Scroll Archive", "Knowledge Base"],
+    ["Compass Queries", "External Research"],
+    ["Ledger Reader", "Financial Context Builder"],
+    ["guest feedback", "customer feedback"],
+    ["Party assembled: 5 adventurers ready", "Team assembled: 5 specialists ready"],
+    ["Adventurer completed task", "Specialist completed task"],
+    ["Quest created", "Decision started"],
+    ["Quest completed: reward revealed", "Decision completed: recommendation ready"],
+    ["Quest Master", "Workspace Owner"],
+  ],
+};
+
+export function adaptMockText(theme: AppTheme, text: string): string {
+  if (theme === "fantasy") return text;
+  let out = text;
+  for (const [from, to] of MOCK_TEXT_ADAPTATIONS[theme]) out = out.replaceAll(from, to);
+  return out;
 }
