@@ -6,7 +6,7 @@ describe("Agent identities across interface styles", () => {
   it("restores Fantasy portraits after Professional and Toyota", () => {
     for (const theme of ["professional", "toyota"] as const) {
       const themed = getAgentsForTheme(theme, MOCK_AGENTS);
-      expect(themed[0]?.portrait).not.toBe(PORTRAITS.maya);
+      expect(themed[0]?.portrait).not.toBe(PORTRAITS["maya"]);
       const fantasy = getAgentsForTheme("fantasy", themed);
       expect(fantasy.map((agent) => agent.portrait)).toEqual(MOCK_AGENTS.map((agent) => agent.portrait));
     }
