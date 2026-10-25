@@ -6,7 +6,7 @@ afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.resetModules(); 
 describe("team generation and storage", () => {
   it("sends the actual goal and active interface to the external planner", async () => {
     vi.stubEnv("VITE_USE_MOCK_API", "false");
-    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    const fetcher = vi.fn().mockImplementation(async () => new Response(JSON.stringify({
       team: { id: "planned", team_name: "Feedback", summary: "Feedback", agents: MOCK_AGENTS },
       planner_source: "LLM", fallback_used: false,
     }), { status: 200 }));

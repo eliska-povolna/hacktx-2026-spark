@@ -36,9 +36,10 @@
 - [x] Live mode is the default; local .env (gitignored) enables mock mode for the preview
 
 ## Open
-- [ ] Generate from the active interface goal and keep generated configurations identical across styles.
-- [ ] Connect saved parties to external team persistence, reopening and editing.
-- [ ] Supply backend implementation prompts and verify frontend behavior.
+- [x] Generate from the active interface goal and keep generated configurations identical across styles.
+- [x] Prepare external saved-team CRUD, reopening by teamId, editing and explicit Save Team; no mock fallback in live mode.
+- [x] Supply backend implementation prompts in docs/QuestMaster_TEAM_BACKEND_PROMPTS.md; verify interface switching and session mock CRUD.
+- [ ] External backend must implement database team CRUD and atomic save-on-plan; live GET /api/teams returns 404. Backend owner must supply a real scoped session contract before authenticated persistence can be verified.
 - Eliška must add the frontend origins to the backend's CORS_ORIGINS — server currently allows only https://questmaster.tech; browser calls from Lovable are blocked:
   - https://hacktx-2026-spark.lovable.app (published/primary)
   - https://id-preview--1822652e-47c8-4da8-ba55-6c900a2db286.lovable.app (preview)
