@@ -45,6 +45,8 @@ import type {
   SavedParty,
   TaskStatus,
 } from "./types";
+import type { PlanningInterface, SavedTeam, SaveTeamInput } from "./types";
+import { getSampleAgentsForTheme } from "@/lib/theme";
 
 const USE_MOCK = (import.meta.env["VITE_USE_MOCK_API"] ?? "false") === "true";
 const API_BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "https://questmaster.tech/api";
@@ -65,7 +67,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     throw new Error(`API request failed: ${res.status} ${path}`);
   }
-  return (await res.json()) as T;
+  return res.status === 204 ? undefined as T : (await res.json()) as T;
 }
 
 export function isMockMode(): boolean {
@@ -185,15 +187,15 @@ export function normalizeRun(raw: BackendRun): Run {
   };
 }
 
-export async function planTeam(goal: string): Promise<PlanTeamResponse> {
+export async function planTeam(goal: string, interfaceTheme: PlanningInterface = "fantasy"): Promise<PlanTeamResponse> {
   if (USE_MOCK) {
     await mockDelay();
     return {
       team: {
-        id: "generated-team-001",
-        team_name: "Moonlit Griffin Quest Party",
+        id: crypto.randomUUID(),
+        team_name: interfaceTheme === "toyota" ? "Mobility Decision Team" : interfaceTheme === "professional" ? "Customer Insight Team" : "Moonlit Griffin Quest Party",
         summary: `Assembled for: ${goal.slice(0, 120)}`,
-        agents: MOCK_AGENTS,
+        agents: getSampleAgentsForTheme(interfaceTheme, MOCK_AGENTS),
       },
       planner_source: "LLM",
       fallback_used: false,
@@ -201,9 +203,53 @@ export async function planTeam(goal: string): Promise<PlanTeamResponse> {
   }
   const res = await request<PlanTeamResponse>("/teams/plan", {
     method: "POST",
-    body: JSON.stringify({ goal, max_team_size: 5, budget_preference: "balanced" }),
+    body: JSON.stringify({ goal, interface_theme: interfaceTheme, max_team_size: 5, budget_preference: "balanced" }),
   });
   return { ...res, team: { ...res.team, agents: normalizeAgents(res.team.agents) } };
+}
+
+// Proposed external backend contract: docs/QuestMaster_TEAM_BACKEND_PROMPTS.md.
+// Mock teams are session-only, never presented as database persistence.
+const mockTeams = new Map<string, SavedTeam>();
+
+function normalizeSavedTeam(team: SavedTeam): SavedTeam {
+  return { ...team, agents: normalizeAgents(team.agents) };
+}
+
+export async function getSavedTeams(): Promise<SavedTeam[]> {
+  if (USE_MOCK) return [...mockTeams.values()];
+  const res = await request<{ teams: SavedTeam[] }>("/teams");
+  return res.teams.map(normalizeSavedTeam);
+}
+
+export async function getSavedTeam(id: string): Promise<SavedTeam> {
+  if (USE_MOCK) {
+    const team = mockTeams.get(id);
+    if (!team) throw new Error("Team not found.");
+    return structuredClone(team);
+  }
+  return normalizeSavedTeam((await request<{ team: SavedTeam }>(`/teams/${encodeURIComponent(id)}`)).team);
+}
+
+export async function saveTeam(input: SaveTeamInput, savedId?: string): Promise<SavedTeam> {
+  const clean = { ...input, team: { ...input.team, agents: input.team.agents.map(({ portrait: _portrait, customized: _customized, ...agent }) => ({ ...agent, portrait: "" })) } };
+  if (USE_MOCK) {
+    const now = new Date().toISOString();
+    const team: SavedTeam = { ...clean.team, id: savedId ?? crypto.randomUUID(), goal: input.goal,
+      interface_theme: input.interface_theme, created_at: (savedId ? mockTeams.get(savedId)?.created_at : undefined) ?? now,
+      updated_at: now, last_run_status: "NEVER" };
+    mockTeams.set(team.id, structuredClone(team));
+    return normalizeSavedTeam(team);
+  }
+  const res = await request<{ team: SavedTeam }>(savedId ? `/teams/${encodeURIComponent(savedId)}` : "/teams", {
+    method: savedId ? "PUT" : "POST", body: JSON.stringify(clean),
+  });
+  return normalizeSavedTeam(res.team);
+}
+
+export async function deleteSavedTeam(id: string): Promise<void> {
+  if (USE_MOCK) { mockTeams.delete(id); return; }
+  await request<void>(`/teams/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 export async function getDemoCustomers(): Promise<DemoCustomer[]> {

@@ -61,6 +61,23 @@ export interface PlanTeamResponse {
   team: TeamDefinition;
   planner_source: "LLM" | "FALLBACK";
   fallback_used: boolean;
+  saved_team?: SavedTeam;
+}
+
+export type PlanningInterface = "fantasy" | "professional" | "toyota";
+
+export interface SavedTeam extends TeamDefinition {
+  goal: string;
+  interface_theme: PlanningInterface;
+  created_at: string;
+  updated_at: string;
+  last_run_status?: "COMPLETED" | "FAILED" | "RUNNING" | "NEVER";
+}
+
+export interface SaveTeamInput {
+  team: TeamDefinition;
+  goal: string;
+  interface_theme: PlanningInterface;
 }
 
 export interface TaskDefinition {

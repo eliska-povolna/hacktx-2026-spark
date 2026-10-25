@@ -7,6 +7,7 @@ import {
   Link2,
   Loader2,
   Plus,
+  Save,
   Shield,
   Sparkles,
   Swords,
@@ -14,13 +15,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { createRun, getDemoCustomers, getRun, isMockMode, planTeam } from "@/api/client";
-import { MOCK_REWARD_STRESSED } from "@/api/mockData";
+import { createRun, getDemoCustomers, getRun, getSavedTeam, isMockMode, planTeam, saveTeam } from "@/api/client";
 import type { AgentDefinition, DemoCustomer, Run, TeamDefinition } from "@/api/types";
 import { AdventurerCard } from "@/components/AdventurerCard";
 import { CharacterSheet } from "@/components/CharacterSheet";
 import { ConfigureAdventurerDialog } from "@/components/ConfigureAdventurerDialog";
 import { ExecutorBadge } from "@/components/ExecutorBadge";
+import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { computeAvoidedPct, computeTaskSplit } from "@/lib/metrics";
 import {
@@ -28,13 +29,14 @@ import {
   getAgentsForTheme,
   readTheme,
   THEME_COPY,
-  TOYOTA_METRICS,
-  TOYOTA_REWARD,
   useTheme,
 } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/create")({
+  validateSearch: (search: Record<string, unknown>): { teamId?: string } => ({
+    teamId: typeof search["teamId"] === "string" ? search["teamId"] : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Create — QuestMaster" },
@@ -79,6 +81,12 @@ function QuestForgePage() {
   const [run, setRun] = useState<Run | null>(null);
   const [running, setRunning] = useState(false);
   const [plannedTeam, setPlannedTeam] = useState<TeamDefinition | null>(null);
+  const { teamId } = Route.useSearch();
+  const [savedId, setSavedId] = useState<string | undefined>();
+  const [sourceTheme, setSourceTheme] = useState(theme);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  const [loadingTeam, setLoadingTeam] = useState(false);
   const [customers, setCustomers] = useState<DemoCustomer[]>([]);
   const [customerId, setCustomerId] = useState("customer-stable");
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -92,11 +100,25 @@ function QuestForgePage() {
   useEffect(() => {
     const prev = prevThemeRef.current;
     prevThemeRef.current = theme;
-    if (prev === theme) return;
+    if (prev === theme || plannedTeam) return;
     setQuest((q) =>
       q.trim() === "" || q === THEME_COPY[prev].sampleQuest ? THEME_COPY[theme].sampleQuest : q,
     );
-  }, [theme]);
+  }, [theme, plannedTeam]);
+
+  useEffect(() => {
+    if (!teamId) return;
+    let active = true;
+    setLoadingTeam(true);
+    getSavedTeam(teamId).then((team) => {
+      if (!active) return;
+      setPlannedTeam(team); setAgents(team.agents); setQuest(team.goal);
+      setSavedId(team.id); setSourceTheme(team.interface_theme); setSelectedId(team.agents[0]?.id ?? null);
+      setRun(null); setSaveError(false);
+    }).catch(() => { if (active) toast.error("Could not open the saved team."); })
+      .finally(() => { if (active) setLoadingTeam(false); });
+    return () => { active = false; };
+  }, [teamId]);
 
   // On mobile the character sheet sits below the card grid — scroll to it
   // when an agent is selected so the tap feels like it opens the profile.
@@ -138,17 +160,37 @@ function QuestForgePage() {
     setPlanning(true);
     setRun(null);
     try {
-      const res = await planTeam(quest);
-      const themedAgents = getAgentsForTheme(theme, res.team.agents);
+      const goal = quest;
+      const planningTheme = theme;
+      const res = await planTeam(goal, planningTheme);
       setPlannedTeam(res.team);
       setAgents(res.team.agents);
-      setSelectedId(themedAgents[0]?.id ?? null);
+      setSelectedId(res.team.agents[0]?.id ?? null);
+      setSourceTheme(planningTheme); setSavedId(undefined); setSaveError(false);
+      try {
+        const saved = res.saved_team ?? await saveTeam({ team: res.team, goal, interface_theme: planningTheme });
+        setSavedId(saved.id); setPlannedTeam(saved);
+      } catch {
+        setSaveError(true);
+        toast.warning("Team created, but not saved. The team storage service is unavailable.");
+      }
       toast.success("Your team has assembled.");
     } catch {
       toast.error(copy.toastPlanError);
     } finally {
       setPlanning(false);
     }
+  };
+
+  const saveChanges = async () => {
+    if (!plannedTeam || saving) return;
+    setSaving(true);
+    try {
+      const saved = await saveTeam({ team: { ...plannedTeam, agents: baseAgents }, goal: quest, interface_theme: sourceTheme }, savedId);
+      setSavedId(saved.id); setPlannedTeam(saved); setSaveError(false);
+      toast.success(isMockMode() ? "Team saved for this demo session." : "Team saved.");
+    } catch { setSaveError(true); toast.error("Could not save the team. Your changes remain open here."); }
+    finally { setSaving(false); }
   };
 
   // Chained-timeout polling: the next poll is scheduled only after the
@@ -190,16 +232,12 @@ function QuestForgePage() {
     try {
       // API_SPEC §9: send the full payload — goal, the whole team (including
       // any edits/removals/custom agents), and the selected demo customer.
-      // Toyota sends the same role/skill configuration the user sees; only
-      // portraits stay presentation-only.
+      // Send the canonical generated configuration in every interface.
       const team: TeamDefinition = {
         id: plannedTeam?.id ?? "custom-team",
         team_name: plannedTeam?.team_name ?? "Custom Team",
         summary: plannedTeam?.summary ?? quest.slice(0, 120),
-        agents:
-          theme === "toyota"
-            ? agents.map((agent) => ({ ...agent, portrait: "" }))
-            : baseAgents,
+        agents: baseAgents.map((agent) => ({ ...agent, portrait: "" })),
       };
       const { run_id } = await createRun({ goal: quest, team, customerId });
       pollRun(run_id);
@@ -210,26 +248,10 @@ function QuestForgePage() {
   };
 
   const saveAgent = (updated: AgentDefinition) => {
-    const displayed = agents.find((agent) => agent.id === updated.id);
-    // Fields the user actually changed (vs. the themed display values) are
-    // written back to the canonical agent; untouched fields keep their
-    // canonical values so theme overlays can still apply. Any explicit edit
-    // marks the agent as customized, which freezes theme overlays for it.
-    const edited =
-      updated.role !== displayed?.role ||
-      updated.skills !== displayed?.skills ||
-      updated.allowed_tools !== displayed?.allowed_tools ||
-      updated.permissions.data_scopes !== displayed?.permissions.data_scopes;
     setAgents((prev) => prev.map((a) => a.id !== updated.id ? a : {
       ...updated,
       portrait: a.portrait,
-      role: updated.role === displayed?.role ? a.role : updated.role,
-      skills: updated.skills === displayed?.skills ? a.skills : updated.skills,
-      allowed_tools: updated.allowed_tools === displayed?.allowed_tools ? a.allowed_tools : updated.allowed_tools,
-      permissions: updated.permissions.data_scopes === displayed?.permissions.data_scopes
-        ? a.permissions
-        : updated.permissions,
-      customized: a.customized || edited,
+      customized: true,
     }));
     toast.success(`${updated.name} has been reconfigured.`);
   };
@@ -251,17 +273,15 @@ function QuestForgePage() {
   // Toyota demo overlay: applied at RENDER time only (mock mode + completed
   // run), so shared run state never carries theme-specific content and
   // switching themes after a finished run stays consistent.
-  const toyotaOverlay = isMockMode() && theme === "toyota" && run?.status === "COMPLETED";
-  // The Toyota demo recommendation respects the selected customer:
-  // stable → Buy Current Vehicle, stressed → Return Vehicle.
-  const toyotaReward = customerId === "customer-stressed" ? MOCK_REWARD_STRESSED : TOYOTA_REWARD;
-  const displayReward = run ? (toyotaOverlay ? toyotaReward : run.reward) : null;
-  const displayMetrics = run ? (toyotaOverlay ? TOYOTA_METRICS : run.metrics) : null;
+  const displayReward = run?.reward ?? null;
+  const displayMetrics = run?.metrics ?? null;
   const avoidedPct = displayMetrics ? computeAvoidedPct(displayMetrics) : 0;
   const split = displayMetrics ? computeTaskSplit(displayMetrics) : null;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
+      {loadingTeam && <p role="status" className="text-muted-foreground">Loading saved team...</p>}
+      {saveError && <p role="alert" className="text-destructive">This team is not saved. Your current changes are only available on this page.</p>}
       {/* SECTION 1 — Goal input */}
       <section className="parchment-panel p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-3">
@@ -317,7 +337,7 @@ function QuestForgePage() {
           {agents.length > 0 && (
             <button
               onClick={startRun}
-              disabled={running}
+              disabled={running || planning || loadingTeam}
               className="btn-outline-gold w-full px-4 py-2.5 text-sm !text-ink sm:w-auto sm:py-2"
             >
               {running ? (
@@ -333,7 +353,7 @@ function QuestForgePage() {
           )}
           <button
             onClick={assembleParty}
-            disabled={planning}
+            disabled={planning || running || loadingTeam}
             className="btn-crimson w-full px-5 py-2.5 text-sm sm:w-auto sm:py-2"
           >
             {planning ? (
@@ -357,6 +377,9 @@ function QuestForgePage() {
             <span className="text-xs text-muted-foreground">
               {agents.length} {copy.readySuffix}
             </span>
+            <Button variant="outline" onClick={saveChanges} disabled={saving || planning || loadingTeam}>
+              {saving ? <Loader2 className="animate-spin" /> : <Save />} Save Team
+            </Button>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
             {agents.map((agent) => (
