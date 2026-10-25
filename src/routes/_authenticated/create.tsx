@@ -66,6 +66,9 @@ function QuestForgePage() {
   const [configureId, setConfigureId] = useState<string | null>(null);
   const [run, setRun] = useState<Run | null>(null);
   const [running, setRunning] = useState(false);
+  const [plannedTeam, setPlannedTeam] = useState<TeamDefinition | null>(null);
+  const [customers, setCustomers] = useState<DemoCustomer[]>([]);
+  const [customerId, setCustomerId] = useState("customer-stable");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const selected = agents.find((a) => a.id === selectedId) ?? null;
@@ -76,6 +79,21 @@ function QuestForgePage() {
   useEffect(() => {
     setQuest(THEME_COPY[theme].sampleQuest);
   }, [theme]);
+
+  // Demo customers for the run context (API_SPEC §8).
+  useEffect(() => {
+    getDemoCustomers()
+      .then((list) => {
+        setCustomers(list);
+        if (list.length > 0 && !list.some((c) => c.id === customerId)) {
+          setCustomerId(list[0]?.id ?? "customer-stable");
+        }
+      })
+      .catch(() => {
+        // Customer list is optional in mock/offline mode — keep the default.
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     return () => {
