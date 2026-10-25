@@ -339,7 +339,7 @@ function QuestForgePage() {
           <Button
             variant="outline"
             size="sm"
-            className="btn-outline-gold text-ink"
+            className="bg-parchment text-ink hover:bg-parchment-deep hover:text-ink border-gold-dim"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading || deletingId !== null || planning || running}
           >
