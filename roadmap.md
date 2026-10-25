@@ -5,4 +5,6 @@
 - Theme system: Fantasy / Professional / Toyota switcher (sidebar + Settings), `data-theme` CSS variables, central copy map in `src/lib/theme.tsx`, localStorage persistence, Toyota demo content (agents, recommendation, metrics)
 
 ## Open
-- (none)
+- Diversify agent portraits across all three styles.
+- Restore correct Fantasy portraits and preserve custom agents when switching styles.
+- Prepare two distinct additional agents and verify creation and theme switching.
