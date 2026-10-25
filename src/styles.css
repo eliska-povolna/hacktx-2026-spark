@@ -618,3 +618,114 @@
     radial-gradient(ellipse 40% 30% at 15% 0%, oklch(0.75 0.14 80 / 14%), transparent),
     radial-gradient(ellipse 40% 30% at 85% 0%, oklch(0.75 0.14 80 / 10%), transparent);
 }
+
+/* ---- Theme switch transition effects (keyed to the incoming theme) ---- */
+
+.theme-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Fantasy: golden arcane burst with rising sparks */
+.theme-transition--fantasy {
+  background: radial-gradient(
+    circle at 50% 45%,
+    oklch(0.82 0.13 90 / 55%),
+    oklch(0.72 0.12 85 / 22%) 38%,
+    transparent 72%
+  );
+  animation: tt-fantasy-glow 0.85s ease-out both;
+}
+
+.theme-transition--fantasy::before,
+.theme-transition--fantasy::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle 3px at 22% 68%, oklch(0.9 0.12 95 / 95%), transparent),
+    radial-gradient(circle 2px at 34% 40%, oklch(0.9 0.12 95 / 90%), transparent),
+    radial-gradient(circle 3px at 48% 74%, oklch(0.85 0.13 88 / 95%), transparent),
+    radial-gradient(circle 2px at 61% 32%, oklch(0.9 0.12 95 / 85%), transparent),
+    radial-gradient(circle 3px at 72% 62%, oklch(0.85 0.13 88 / 95%), transparent),
+    radial-gradient(circle 2px at 83% 44%, oklch(0.9 0.12 95 / 90%), transparent);
+  animation: tt-fantasy-sparks 0.85s ease-out both;
+}
+
+.theme-transition--fantasy::after {
+  transform: scaleX(-1);
+  animation-delay: 0.08s;
+}
+
+@keyframes tt-fantasy-glow {
+  0% { opacity: 0; transform: scale(0.65); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.18); }
+}
+
+@keyframes tt-fantasy-sparks {
+  0% { opacity: 0; transform: translateY(24px) scale(0.8); }
+  35% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-46px) scale(1.05); }
+}
+
+/* Professional: clean diagonal light sweep */
+.theme-transition--professional {
+  background: linear-gradient(
+    105deg,
+    transparent 32%,
+    oklch(0.99 0.005 250 / 90%) 50%,
+    transparent 68%
+  );
+  background-size: 260% 100%;
+  background-repeat: no-repeat;
+  animation: tt-professional-sweep 0.7s ease-in-out both;
+}
+
+@keyframes tt-professional-sweep {
+  0% { background-position: 130% 0; opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { background-position: -30% 0; opacity: 0; }
+}
+
+/* Toyota: red speed streaks driving across the screen */
+.theme-transition--toyota::before,
+.theme-transition--toyota::after {
+  content: "";
+  position: absolute;
+  top: -25%;
+  bottom: -25%;
+  width: 40%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    oklch(0.5 0.2 25 / 80%) 45%,
+    oklch(0.42 0.18 25 / 95%)
+  );
+  transform: skewX(-16deg);
+  animation: tt-toyota-drive 0.75s cubic-bezier(0.55, 0.05, 0.3, 1) both;
+}
+
+.theme-transition--toyota::after {
+  width: 16%;
+  opacity: 0.65;
+  animation-delay: 0.09s;
+}
+
+@keyframes tt-toyota-drive {
+  from { left: -50%; }
+  to { left: 118%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-transition,
+  .theme-transition::before,
+  .theme-transition::after {
+    animation: none !important;
+    display: none;
+  }
+}

@@ -14,6 +14,7 @@ import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 import { AuthProvider } from "../lib/auth";
 import { ThemeProvider, useTheme } from "../lib/theme-context";
+import { ThemeTransition } from "../components/ThemeTransition";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 // Toaster follows the active interface style: dark for the fantasy shell,
