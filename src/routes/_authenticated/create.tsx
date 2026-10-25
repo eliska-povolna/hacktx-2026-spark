@@ -165,7 +165,7 @@ function QuestForgePage() {
       model_policy: "Use LLM for reasoning. Prefer tools and code first.",
       budget: { max_llm_cost_usd: 0.5, max_llm_calls: 2 },
       estimated_cost_usd: 0.05,
-      portrait: PORTRAITS[Object.keys(PORTRAITS)[n % 5] ?? "maya"]!,
+      portrait: getPortrait(theme, Object.keys(PORTRAITS)[n % 5] ?? "maya"),
     };
     setAgents((prev) => [...prev, custom]);
     setSelectedId(custom.id);
