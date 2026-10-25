@@ -453,18 +453,37 @@ export function getThemePortraitByIndex(theme: AppTheme, index: number): string 
 // random hash, classify each agent by its function (role/skills/purpose/
 // scopes) and give it the matching canonical identity: Maya = finance,
 // Rowan = research, Brann = operations/analysis, Selene = decision/strategy,
-// Odo = review/policy. The same function always gets the same portrait in
-// every theme. Agents whose function does not match keep identity hashing.
+// Odo = review/policy, Amara = communication/support, Kenji = engineering/
+// data pipelines. The same function always gets the same portrait and
+// persona name in every theme. Agents whose function does not match keep
+// identity hashing into the remaining pool.
 
-type AgentFunctionKey = "maya" | "rowan" | "brann" | "selene" | "odo";
+type AgentFunctionKey = "maya" | "rowan" | "brann" | "selene" | "odo" | "amara" | "kenji";
+
+// Canonical persona name for each function identity — profile cards show
+// this name, while the agent's role keeps describing its function.
+export const FUNCTION_NAMES: Record<AgentFunctionKey, string> = {
+  maya: "Maya",
+  rowan: "Rowan",
+  brann: "Brann",
+  selene: "Selene",
+  odo: "Odo",
+  amara: "Amara",
+  kenji: "Kenji",
+};
 
 // Review/policy is checked first — its agents often mention costs or data
 // ("reviews budget compliance"), and the more specific function should win.
+// Engineering (Kenji) and communication/support (Amara) come before the
+// broad analysis catch-all (Brann) so "data engineer" or "support writer"
+// are not swallowed by "data"/"analy".
 const FUNCTION_KEYWORDS: [RegExp, AgentFunctionKey][] = [
   [/review|polic|valid|guard|complian|secur|quality|safety|audit|risk|ethic/i, "odo"],
   [/financ|budget|cost|ledger|billing|cash.?flow|affordab|accounting/i, "maya"],
   [/research|gather|web.?search|explor|survey|discover/i, "rowan"],
   [/decision|recommend|strateg|synthes|model|priorit/i, "selene"],
+  [/engineer|cod(e|ing)|develop|program|etl|pipeline|sql|database|\bapi\b|technical|integrat/i, "kenji"],
+  [/communicat|support|service|writ|draft|copy|content|document|onboard|train|present|market/i, "amara"],
   [/analy|optimi|process|pattern|operation|metric|vehicle|usage|data(?!\s*privacy)/i, "brann"],
 ];
 
@@ -494,6 +513,28 @@ export function classifyAgentFunction(
   return null;
 }
 
+// Resolve the portrait-pool key for one agent. Custom agents keep their
+// Amara/Kenji identity; classified agents take their function's key;
+// collisions and unclassifiable agents fall back to the identity hash and
+// then to any still-unused key, so every portrait in a team stays distinct.
+function resolveFunctionKey(
+  agent: AgentFunctionSource & { id: string; name: string },
+  usedKeys: Set<string>,
+): string {
+  const id = agent.id.toLowerCase();
+  const customKey = id.startsWith("custom-amara-") ? "amara"
+    : id.startsWith("custom-kenji-") ? "kenji" : null;
+  const classified = customKey ?? classifyAgentFunction(agent, "title") ?? classifyAgentFunction(agent, "full");
+  if (classified && !usedKeys.has(classified)) return classified;
+  let hash = 0;
+  for (const character of id || agent.name.toLowerCase()) {
+    hash = (Math.imul(hash, 31) + character.charCodeAt(0)) >>> 0;
+  }
+  const hashKey = PORTRAIT_KEYS[hash % PORTRAIT_KEYS.length] ?? "maya";
+  if (!usedKeys.has(hashKey)) return hashKey;
+  return PORTRAIT_KEYS.find((key) => !usedKeys.has(key)) ?? hashKey;
+}
+
 // Assign canonical portraits by function. Classification runs in two passes
 // over the whole team: first by name+role only (concise, reliable), then by
 // full text for agents still unmatched — so a noisy purpose never steals an
@@ -505,42 +546,37 @@ export function getFunctionPortrait(
   agent: AgentFunctionSource & { id: string; name: string },
   usedKeys: Set<string>,
 ): string {
-  const key = classifyAgentFunction(agent, "title") ?? classifyAgentFunction(agent, "full");
-  if (key && !usedKeys.has(key)) {
-    usedKeys.add(key);
-    return getPortrait(theme, key);
-  }
-  const fallback = getPortrait(theme, agent.id, agent.name);
-  const fallbackKey = PORTRAIT_KEYS.find((k) => getPortrait(theme, k) === fallback);
-  if (fallbackKey && !usedKeys.has(fallbackKey)) {
-    usedKeys.add(fallbackKey);
-    return fallback;
-  }
-  const free = PORTRAIT_KEYS.find((k) => !usedKeys.has(k));
-  if (free) {
-    usedKeys.add(free);
-    return getPortrait(theme, free);
-  }
-  return fallback;
+  const key = resolveFunctionKey(agent, usedKeys);
+  usedKeys.add(key);
+  return getPortrait(theme, key);
 }
 
 // Team-level assignment: resolve every agent's function key first (title
-// pass wins over full-text pass team-wide), then hand out portraits.
-export function assignFunctionPortraits<T extends AgentFunctionSource & { id: string; name: string }>(
+// pass wins over full-text pass team-wide), then hand out identities.
+// Returns the pool key each agent received so callers can also show the
+// matching persona name next to the portrait.
+export function assignFunctionIdentities<T extends AgentFunctionSource & { id: string; name: string }>(
   theme: AppTheme,
   agents: T[],
-): string[] {
+): { key: string; portrait: string }[] {
   const keys = agents.map((a) => classifyAgentFunction(a, "title"));
   agents.forEach((a, i) => { keys[i] ??= classifyAgentFunction(a, "full"); });
   const used = new Set<string>();
   return agents.map((agent, i) => {
-    const key = keys[i];
-    if (key && !used.has(key)) {
-      used.add(key);
-      return getPortrait(theme, key);
-    }
-    return getFunctionPortrait(theme, agent, used);
+    const classified = keys[i] ?? null;
+    const resolved: string = classified && !used.has(classified)
+      ? classified
+      : resolveFunctionKey(agent, used);
+    used.add(resolved);
+    return { key: resolved, portrait: getPortrait(theme, resolved) };
   });
+}
+
+export function assignFunctionPortraits<T extends AgentFunctionSource & { id: string; name: string }>(
+  theme: AppTheme,
+  agents: T[],
+): string[] {
+  return assignFunctionIdentities(theme, agents).map((identity) => identity.portrait);
 }
 
 export function getPortrait(theme: AppTheme, agentId: string, agentName = ""): string {

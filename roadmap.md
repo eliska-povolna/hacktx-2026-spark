@@ -52,3 +52,4 @@
   - https://hacktx-2026-spark.lovable.app (published/primary)
   - https://id-preview--1822652e-47c8-4da8-ba55-6c900a2db286.lovable.app (preview)
   - (optional, local dev) http://localhost:8080
+- [x] Persona names back on profile cards (name follows assigned identity, role keeps the function label); function categories expanded to all 7 identities (added communication/support→Amara, engineering/data→Kenji); live-verified team showed Brann/Maya/Odo/Kenji/Selene with correct roles; 63 tests pass, build clean.
