@@ -150,6 +150,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 export function AppSidebar() {
   const [open, setOpen] = useState(false);
+  const { theme } = useTheme();
 
   return (
     <>
@@ -163,7 +164,9 @@ export function AppSidebar() {
           <Menu className="h-5 w-5" />
         </button>
         <CrestLogo className="h-7 w-7 text-gold" />
-        <span className="font-display text-lg font-bold text-gold-bright">QuestMaster</span>
+        <span className="font-display text-lg font-bold text-gold-bright">
+          {THEME_COPY[theme].brandName}
+        </span>
       </div>
 
       {/* Mobile drawer */}

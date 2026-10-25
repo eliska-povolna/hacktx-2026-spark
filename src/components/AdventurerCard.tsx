@@ -1,6 +1,7 @@
 import { CheckCircle2 } from "lucide-react";
 
 import type { AgentDefinition } from "@/api/types";
+import { THEME_COPY, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 export function AdventurerCard({
@@ -12,6 +13,8 @@ export function AdventurerCard({
   selected: boolean;
   onSelect: () => void;
 }) {
+  const { theme } = useTheme();
+  const copy = THEME_COPY[theme];
   return (
     <button
       onClick={onSelect}
@@ -27,10 +30,15 @@ export function AdventurerCard({
           loading="lazy"
           width={816}
           height={816}
-          className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+          className="agent-portrait-img h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
         />
+        <div className="agent-portrait-initial h-full w-full">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-card font-display text-2xl font-bold text-foreground">
+            {agent.name.charAt(0)}
+          </span>
+        </div>
         <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-forest">
-          <CheckCircle2 className="h-3 w-3" /> Ready
+          <CheckCircle2 className="h-3 w-3" /> {copy.ready}
         </span>
       </div>
       <div className="p-3">
