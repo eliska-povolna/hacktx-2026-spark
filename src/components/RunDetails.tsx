@@ -20,7 +20,7 @@ export function RunDetails({
   return (
     <div className="space-y-6">
       {run.portfolio_result && (
-        <section aria-label="Portfolio results">
+        <section aria-label="Portfolio results" className="parchment-panel min-w-0 p-4 text-ink">
           <h2 className="gold-heading text-xl font-bold">{run.portfolio_result.purpose === "loan" ? "Loan opportunity ranking" : "Mobility priority ranking"}</h2>
           <p className="mt-2 text-sm text-muted-foreground">Heuristic demo scores, not credit approval or eligibility decisions. Each banking source is shown per customer.</p>
           <div className="mt-3 overflow-x-auto rounded border border-border">
