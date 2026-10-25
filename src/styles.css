@@ -342,6 +342,23 @@
   color: var(--foreground);
 }
 
+[data-theme="professional"] .btn-secondary,
+[data-theme="toyota"] .btn-secondary {
+  font-family: inherit;
+  letter-spacing: 0.01em;
+  color: var(--foreground);
+  background: var(--secondary);
+  border: 1px solid var(--input);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 8%);
+}
+
+[data-theme="professional"] .btn-secondary:hover,
+[data-theme="toyota"] .btn-secondary:hover {
+  filter: none;
+  background: var(--muted);
+  border-color: var(--border);
+}
+
 [data-theme="professional"] .chip-parchment,
 [data-theme="toyota"] .chip-parchment {
   color: var(--muted-foreground);
