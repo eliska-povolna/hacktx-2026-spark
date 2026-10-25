@@ -27,6 +27,7 @@ import {
 } from "./mockData";
 import type {
   AgentDefinition,
+  Attachment,
   AuditEvent,
   BackendRun,
   CreateRunInput,
@@ -46,7 +47,7 @@ import type {
   TaskStatus,
 } from "./types";
 import type { PlanningInterface, SavedTeam, SaveTeamInput } from "./types";
-import { getPortrait, getSampleAgentsForTheme } from "@/lib/theme";
+import { getPortrait, getSampleAgentsForTheme, getThemePortraitByIndex } from "@/lib/theme";
 
 const USE_MOCK = (import.meta.env["VITE_USE_MOCK_API"] ?? "false") === "true";
 const API_BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "https://questmaster.tech/api";
@@ -68,7 +69,7 @@ export class ApiRequestError extends Error {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: init?.body instanceof FormData ? undefined : { "Content-Type": "application/json" },
     ...init,
   });
   if (!res.ok) {
@@ -89,6 +90,16 @@ export function getApiBaseUrl(): string {
   return API_BASE_URL;
 }
 
+export async function uploadAttachment(file: File): Promise<Attachment> {
+  const body = new FormData();
+  body.append("file", file);
+  return request<Attachment>("/attachments", { method: "POST", body });
+}
+
+export async function deleteAttachment(id: string): Promise<void> {
+  await request<void>(`/attachments/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
 // The backend does not implement /demo-session — the hackathon session is
 // client-side only (API_SPEC §5 allows this).
 export async function createDemoSession(): Promise<DemoSession> {
@@ -107,7 +118,7 @@ export async function createDemoSession(): Promise<DemoSession> {
 // The backend never sends portraits or descriptions (API_SPEC §3.3):
 // fill the portrait from the local PORTRAITS set (matched by agent name or
 // id) and fall back to `purpose` for the description.
-export function normalizeAgents(agents: Partial<AgentDefinition>[]): AgentDefinition[] {
+export function normalizeAgents(agents: Partial<AgentDefinition>[], theme: PlanningInterface = "fantasy"): AgentDefinition[] {
   return agents.map((agent, i) => {
     const name = agent.name ?? `Agent ${i + 1}`;
     const purpose = agent.purpose ?? "";
@@ -125,7 +136,7 @@ export function normalizeAgents(agents: Partial<AgentDefinition>[]): AgentDefini
       model_policy: agent.model_policy ?? "auto",
       budget: agent.budget ?? { max_llm_cost_usd: 0.05, max_llm_calls: 2 },
       estimated_cost_usd: agent.estimated_cost_usd ?? 0,
-      portrait: agent.portrait || getPortrait("fantasy", agent.id ?? `agent-${i + 1}`, name),
+      portrait: agent.portrait?.trim() || getPortrait(theme, agent.id ?? `agent-${i + 1}`, name) || getThemePortraitByIndex(theme, i),
     };
   });
 }
@@ -200,7 +211,7 @@ export function normalizeRun(raw: BackendRun): Run {
   };
 }
 
-export async function planTeam(goal: string, interfaceTheme: PlanningInterface = "fantasy"): Promise<PlanTeamResponse> {
+export async function planTeam(goal: string, interfaceTheme: PlanningInterface = "fantasy", attachment_ids: string[] = []): Promise<PlanTeamResponse> {
   if (USE_MOCK) {
     await mockDelay();
     return {
@@ -216,12 +227,12 @@ export async function planTeam(goal: string, interfaceTheme: PlanningInterface =
   }
   const res = await request<PlanTeamResponse>("/teams/plan", {
     method: "POST",
-    body: JSON.stringify({ goal, interface_theme: interfaceTheme, max_team_size: 5, budget_preference: "balanced" }),
+    body: JSON.stringify({ goal, interface_theme: interfaceTheme, max_team_size: 5, budget_preference: "balanced", attachment_ids }),
   });
   if (res.fallback_used === true) {
     throw new ApiRequestError("Planner returned a fallback team.");
   }
-  return { ...res, team: { ...res.team, agents: normalizeAgents(res.team.agents) } };
+  return { ...res, team: { ...res.team, agents: normalizeAgents(res.team.agents, interfaceTheme) } };
 }
 
 // Proposed external backend contract: docs/QuestMaster_TEAM_BACKEND_PROMPTS.md.
@@ -375,7 +386,8 @@ export async function createRun(input: CreateRunInput): Promise<{ run_id: string
     body: JSON.stringify({
       goal: input.goal,
       team: input.team,
-      context: { customer_id: input.customerId },
+      attachment_ids: input.attachment_ids ?? [],
+      context: { customer_id: input.customerId, attachment_ids: input.attachment_ids ?? [] },
       quality_mode: "normal",
     }),
   });

@@ -443,6 +443,11 @@ const TOYOTA_PORTRAITS: Record<string, string> = {
 
 const PORTRAIT_KEYS = ["maya", "rowan", "brann", "selene", "odo", "amara", "kenji"];
 
+export function getThemePortraitByIndex(theme: AppTheme, index: number): string {
+  const key = PORTRAIT_KEYS[index % PORTRAIT_KEYS.length] ?? "maya";
+  return getPortrait(theme, key);
+}
+
 export function getPortrait(theme: AppTheme, agentId: string, agentName = ""): string {
   const id = agentId.toLowerCase();
   const key = id.startsWith("custom-amara-") ? "amara"

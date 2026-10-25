@@ -154,6 +154,16 @@ export interface CreateRunInput {
   goal: string;
   team: TeamDefinition;
   customerId: string;
+  attachment_ids?: string[];
+}
+
+export interface Attachment {
+  id: string;
+  filename: string;
+  content_type: string;
+  size_bytes: number;
+  created_at: string;
+  has_text_excerpt: boolean;
 }
 
 // ---- Raw backend shapes (docs/QuestMaster_API_SPEC.md §3.9, §3.10, §10) ----
