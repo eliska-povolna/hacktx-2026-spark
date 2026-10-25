@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, UserRound } from "lucide-react";
 
 import { CrestLogo } from "@/components/CrestLogo";
 import { useAuth } from "@/lib/auth";
@@ -161,8 +161,9 @@ function LoginPage() {
             continueAsDemo();
             navigate({ to: "/create" });
           }}
-          className="chip-parchment w-full px-4 py-2.5 text-sm font-semibold"
+          className="btn-secondary w-full px-4 py-2.5 text-sm"
         >
+          <UserRound className="h-4 w-4" aria-hidden="true" />
           {copy.auth.demoButton}
         </button>
         <p className="mt-2 text-center text-[11px] italic text-ink-soft">

@@ -342,6 +342,23 @@
   color: var(--foreground);
 }
 
+[data-theme="professional"] .btn-secondary,
+[data-theme="toyota"] .btn-secondary {
+  font-family: inherit;
+  letter-spacing: 0.01em;
+  color: var(--foreground);
+  background: var(--secondary);
+  border: 1px solid var(--input);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 8%);
+}
+
+[data-theme="professional"] .btn-secondary:hover,
+[data-theme="toyota"] .btn-secondary:hover {
+  filter: none;
+  background: var(--muted);
+  border-color: var(--border);
+}
+
 [data-theme="professional"] .chip-parchment,
 [data-theme="toyota"] .chip-parchment {
   color: var(--muted-foreground);
@@ -570,6 +587,35 @@
   &:hover {
     background: oklch(0.72 0.12 85 / 12%);
     color: var(--gold-bright);
+  }
+}
+
+@utility btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  background: linear-gradient(180deg, oklch(0.97 0.03 97), oklch(0.9 0.05 90));
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 0 0 2px oklch(0.85 0.05 85 / 35%),
+    0 3px 8px -3px oklch(0.35 0.05 70 / 45%),
+    inset 0 1px 0 oklch(1 0 0 / 60%);
+  transition: filter 150ms ease, transform 150ms ease;
+  cursor: pointer;
+
+  &:hover {
+    filter: brightness(1.04);
+    border-color: var(--gold);
+  }
+
+  &:active {
+    transform: translateY(1px);
   }
 }
 
