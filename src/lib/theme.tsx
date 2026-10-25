@@ -44,7 +44,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
+    document.documentElement.dataset["theme"] = theme;
   }, [theme]);
 
   const setTheme = useCallback((next: AppTheme) => {
