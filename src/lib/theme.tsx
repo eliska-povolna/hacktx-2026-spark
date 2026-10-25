@@ -458,12 +458,14 @@ export function getThemePortraitByIndex(theme: AppTheme, index: number): string 
 
 type AgentFunctionKey = "maya" | "rowan" | "brann" | "selene" | "odo";
 
+// Review/policy is checked first — its agents often mention costs or data
+// ("reviews budget compliance"), and the more specific function should win.
 const FUNCTION_KEYWORDS: [RegExp, AgentFunctionKey][] = [
-  [/financ|budget|cost|ledger|account|billing|cash.?flow|affordab/i, "maya"],
-  [/research|gather|web.?search|explor|survey|discover/i, "rowan"],
-  [/analy|optimi|process|pattern|operation|metric|vehicle|usage|data(?!\s*privacy)/i, "brann"],
-  [/decision|recommend|strateg|synthes|model|priorit/i, "selene"],
   [/review|polic|valid|guard|complian|secur|quality|safety|audit|risk|ethic/i, "odo"],
+  [/financ|budget|cost|ledger|billing|cash.?flow|affordab|accounting/i, "maya"],
+  [/research|gather|web.?search|explor|survey|discover/i, "rowan"],
+  [/decision|recommend|strateg|synthes|model|priorit/i, "selene"],
+  [/analy|optimi|process|pattern|operation|metric|vehicle|usage|data(?!\s*privacy)/i, "brann"],
 ];
 
 export function classifyAgentFunction(agent: {
