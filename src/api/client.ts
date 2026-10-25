@@ -117,14 +117,19 @@ export async function createDemoSession(): Promise<DemoSession> {
 }
 
 // The backend never sends portraits or descriptions (API_SPEC §3.3):
-// fill the portrait from the local PORTRAITS set (matched by agent name or
-// id) and fall back to `purpose` for the description.
+// fill the portrait from the local PORTRAITS set and fall back to `purpose`
+// for the description. Portraits are assigned by agent function (finance →
+// Maya, research → Rowan, analysis → Brann, decision → Selene, review → Odo)
+// so the same kind of agent always shows the same face in every theme;
+// unclassifiable agents keep stable identity hashing.
 export function normalizeAgents(agents: Partial<AgentDefinition>[], theme: PlanningInterface = "fantasy"): AgentDefinition[] {
+  const usedKeys = new Set<string>();
   return agents.map((agent, i) => {
     const name = agent.name ?? `Agent ${i + 1}`;
     const purpose = agent.purpose ?? "";
+    const id = agent.id ?? `agent-${i + 1}`;
     return {
-      id: agent.id ?? `agent-${i + 1}`,
+      id,
       name,
       role: agent.role ?? "Specialist",
       purpose,
@@ -137,7 +142,9 @@ export function normalizeAgents(agents: Partial<AgentDefinition>[], theme: Plann
       model_policy: agent.model_policy ?? "auto",
       budget: agent.budget ?? { max_llm_cost_usd: 0.05, max_llm_calls: 2 },
       estimated_cost_usd: agent.estimated_cost_usd ?? 0,
-      portrait: agent.portrait?.trim() || getPortrait(theme, agent.id ?? `agent-${i + 1}`, name) || getThemePortraitByIndex(theme, i),
+      portrait: agent.portrait?.trim()
+        || getFunctionPortrait(theme, { id, name, role: agent.role, skills: agent.skills, purpose, permissions: agent.permissions }, usedKeys)
+        || getThemePortraitByIndex(theme, i),
       ...(agent.customized !== undefined ? { customized: agent.customized } : {}),
     };
   });
