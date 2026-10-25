@@ -113,6 +113,12 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=localStorage.getItem('questmaster.theme');if(t==='professional'||t==='toyota'){document.documentElement.dataset.theme=t;}}catch(e){}",
+          }}
+        />
         <HeadContent />
       </head>
       <body>

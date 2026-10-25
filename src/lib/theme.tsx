@@ -303,7 +303,3 @@ export const TOYOTA_METRICS: RunMetrics = {
 export function getAgentsForTheme(theme: AppTheme, agents: AgentDefinition[]): AgentDefinition[] {
   return theme === "toyota" ? TOYOTA_AGENTS : agents;
 }
-
-export function portraitKeys(): string[] {
-  return Object.keys(PORTRAITS);
-}
