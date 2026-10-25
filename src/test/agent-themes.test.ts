@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MOCK_AGENTS, PORTRAITS } from "@/api/mockData";
-import { createCustomAgent, getAgentsForTheme, getPortrait } from "@/lib/theme";
+import { normalizeAgents } from "@/api/client";
+import { classifyAgentFunction, createCustomAgent, getAgentsForTheme, getPortrait } from "@/lib/theme";
 
 describe("Agent identities across interface styles", () => {
   it("keeps live portrait identities stable across team order and uses each theme's jpg pool", () => {
