@@ -494,15 +494,18 @@ export function classifyAgentFunction(
   return null;
 }
 
-// Assign canonical portraits by function. When several agents share one
-// function, the first keeps the canonical identity and the rest fall back
-// to unused pool entries so portraits stay distinct within a team.
+// Assign canonical portraits by function. Classification runs in two passes
+// over the whole team: first by name+role only (concise, reliable), then by
+// full text for agents still unmatched — so a noisy purpose never steals an
+// identity from an agent whose title states the function. When several
+// agents share one function, the first keeps the canonical identity and the
+// rest fall back to unused pool entries so portraits stay distinct.
 export function getFunctionPortrait(
   theme: AppTheme,
-  agent: Parameters<typeof classifyAgentFunction>[0] & { id: string; name: string },
+  agent: AgentFunctionSource & { id: string; name: string },
   usedKeys: Set<string>,
 ): string {
-  const key = classifyAgentFunction(agent);
+  const key = classifyAgentFunction(agent, "title") ?? classifyAgentFunction(agent, "full");
   if (key && !usedKeys.has(key)) {
     usedKeys.add(key);
     return getPortrait(theme, key);
@@ -519,6 +522,25 @@ export function getFunctionPortrait(
     return getPortrait(theme, free);
   }
   return fallback;
+}
+
+// Team-level assignment: resolve every agent's function key first (title
+// pass wins over full-text pass team-wide), then hand out portraits.
+export function assignFunctionPortraits<T extends AgentFunctionSource & { id: string; name: string }>(
+  theme: AppTheme,
+  agents: T[],
+): string[] {
+  const keys = agents.map((a) => classifyAgentFunction(a, "title"));
+  agents.forEach((a, i) => { keys[i] ??= classifyAgentFunction(a, "full"); });
+  const used = new Set<string>();
+  return agents.map((agent, i) => {
+    const key = keys[i];
+    if (key && !used.has(key)) {
+      used.add(key);
+      return getPortrait(theme, key);
+    }
+    return getFunctionPortrait(theme, agent, used);
+  });
 }
 
 export function getPortrait(theme: AppTheme, agentId: string, agentName = ""): string {
