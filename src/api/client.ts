@@ -29,8 +29,8 @@ import type {
   TaskStatus,
 } from "./types";
 
-const USE_MOCK = (import.meta.env.VITE_USE_MOCK_API ?? "true") !== "false";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api";
+const USE_MOCK = (import.meta.env["VITE_USE_MOCK_API"] ?? "true") !== "false";
+const API_BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "http://localhost:8000/api";
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
