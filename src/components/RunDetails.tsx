@@ -3,13 +3,53 @@ import { ExecutorBadge } from "@/components/ExecutorBadge";
 import { formatMoney, humanize } from "@/lib/result-format";
 import { cn } from "@/lib/utils";
 
-export function RunDetails({ run, toyota }: { run: Run; toyota: boolean }) {
+export function RunDetails({
+  run,
+  toyota,
+  showNessie = false,
+}: {
+  run: Run;
+  toyota: boolean;
+  showNessie?: boolean;
+}) {
   const recommendation = run.recommendation;
   const financial = run.financial_context;
   const evaluators = run.evaluators ?? [];
   const passed = evaluators.filter((item) => item.status === "PASS").length;
+  const nessieSources = run.tasks.filter((task) => /nessie/i.test(task.data_source) || /nessie/i.test(task.action) || /nessie/i.test(task.name));
   return (
     <div className="space-y-6">
+      {run.status === "NO_ACTION_NEEDED" && (
+        <section className="parchment-panel border border-gold-dim/40 p-4">
+          <h2 className="gold-heading text-lg font-bold">No action needed</h2>
+          <p className="mt-1 text-sm text-ink-soft">
+            Mobility relevance check decided no further banking or recommendation work was required for this customer.
+          </p>
+        </section>
+      )}
+      {(showNessie || financial) && (
+        <section>
+          <h2 className="gold-heading text-xl font-bold">Nessie / banking provenance</h2>
+          {financial ? (
+            <p className="mt-1 text-sm text-ink-soft">
+              Financial context below was derived from Nessie (or its configured fallback). Raw account rows stay server-side.
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-ink-soft">
+              Nessie was enabled for this run, but no financial context was produced (skipped by relevance, permissions, or a short plan).
+            </p>
+          )}
+          {nessieSources.length > 0 && (
+            <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+              {nessieSources.map((task) => (
+                <li key={task.id}>
+                  {task.name}: <span className="font-mono">{task.data_source}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
       {toyota && recommendation && (
         <>
           <section>

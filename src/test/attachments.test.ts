@@ -47,9 +47,23 @@ describe("live attachment contract", () => {
   it("passes the same attachment IDs to execution and run context", async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ run_id: "r", status: "PLANNING" }), { status: 202 }));
     const api = await liveApi(fetcher);
-    await api.createRun({ goal: "Analyze my file", team: { id: "t", team_name: "Live team", summary: "", agents: [] }, customerId: "customer-stable", attachment_ids: ["att-1", "att-2"] });
+    await api.createRun({
+      goal: "Analyze my file",
+      team: { id: "t", team_name: "Live team", summary: "", agents: [] },
+      customerId: "customer-stable",
+      attachment_ids: ["att-1", "att-2"],
+      context_source_ids: ["toyota_customer", "nessie_banking"],
+    });
     expect(fetcher.mock.calls[0]?.[0]).toBe("https://questmaster.tech/api/runs");
-    expect(JSON.parse(fetcher.mock.calls[0]?.[1].body)).toMatchObject({ attachment_ids: ["att-1", "att-2"], context: { attachment_ids: ["att-1", "att-2"], customer_id: "customer-stable" } });
+    expect(JSON.parse(fetcher.mock.calls[0]?.[1].body)).toMatchObject({
+      attachment_ids: ["att-1", "att-2"],
+      context_source_ids: ["toyota_customer", "nessie_banking"],
+      context: {
+        attachment_ids: ["att-1", "att-2"],
+        customer_id: "customer-stable",
+        context_source_ids: ["toyota_customer", "nessie_banking"],
+      },
+    });
   });
 
   it.each(["upload", "plan"])("preserves backend error.message for %s errors", async (action) => {

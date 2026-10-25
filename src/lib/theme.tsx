@@ -522,8 +522,8 @@ function resolveFunctionKey(
   usedKeys: Set<string>,
 ): string {
   const id = agent.id.toLowerCase();
-  const customKey = id.startsWith("custom-amara-") ? "amara"
-    : id.startsWith("custom-kenji-") ? "kenji" : null;
+  const customMatch = /^custom-([a-z]+)-/.exec(id);
+  const customKey = customMatch?.[1] && PORTRAIT_KEYS.includes(customMatch[1]) ? customMatch[1] : null;
   const classified = customKey ?? classifyAgentFunction(agent, "title") ?? classifyAgentFunction(agent, "full");
   if (classified && !usedKeys.has(classified)) return classified;
   let hash = 0;
@@ -581,8 +581,8 @@ export function assignFunctionPortraits<T extends AgentFunctionSource & { id: st
 
 export function getPortrait(theme: AppTheme, agentId: string, agentName = ""): string {
   const id = agentId.toLowerCase();
-  const key = id.startsWith("custom-amara-") ? "amara"
-    : id.startsWith("custom-kenji-") ? "kenji" : id;
+  const customMatch = /^custom-([a-z]+)-/.exec(id);
+  const key = customMatch?.[1] && PORTRAIT_KEYS.includes(customMatch[1]) ? customMatch[1] : id;
   const pool = theme === "professional" ? PRO_PORTRAITS : theme === "toyota" ? TOYOTA_PORTRAITS
     : { ...PORTRAITS, amara: fantasyAmara, kenji: fantasyKenji };
   const matched = pool[key] || pool[agentName.toLowerCase()];
@@ -595,11 +595,37 @@ export function getPortrait(theme: AppTheme, agentId: string, agentName = ""): s
   return pool[PORTRAIT_KEYS[hash % PORTRAIT_KEYS.length] ?? "maya"] || fantasyAmara;
 }
 
+// Pick an unused portrait/persona from the full pool so customs stay distinct
+// instead of looping Amara/Kenji once those two slots are taken.
+const CUSTOM_PERSONAS = PORTRAIT_KEYS.map((key) => ({
+  key,
+  name: FUNCTION_NAMES[key as AgentFunctionKey],
+}));
+
+function usedPortraitKeys(agents: AgentDefinition[]): Set<string> {
+  const used = new Set<string>();
+  for (const agent of agents) {
+    const id = agent.id.toLowerCase();
+    const custom = CUSTOM_PERSONAS.find(({ key }) => id.startsWith(`custom-${key}-`));
+    if (custom) {
+      used.add(custom.key);
+      continue;
+    }
+    const byName = CUSTOM_PERSONAS.find(({ name }) => name.toLowerCase() === agent.name.toLowerCase());
+    if (byName) used.add(byName.key);
+    else {
+      const classified = classifyAgentFunction(agent, "title") ?? classifyAgentFunction(agent, "full");
+      if (classified) used.add(classified);
+    }
+  }
+  return used;
+}
+
 // Canonical configuration is independent of the currently displayed theme.
 export function createCustomAgent(agents: AgentDefinition[]): AgentDefinition {
-  const choices = [{ key: "amara", name: "Amara" }, { key: "kenji", name: "Kenji" }];
-  const choice = choices.find(({ key }) => !agents.some((agent) => agent.id.startsWith(`custom-${key}-`)))
-    ?? choices[agents.filter((agent) => agent.id.startsWith("custom-")).length % choices.length]
+  const used = usedPortraitKeys(agents);
+  const choice = CUSTOM_PERSONAS.find(({ key }) => !used.has(key))
+    ?? CUSTOM_PERSONAS[agents.filter((agent) => agent.id.startsWith("custom-")).length % CUSTOM_PERSONAS.length]
     ?? { key: "amara", name: "Amara" };
   let name = choice.name;
   let suffix = 2;
@@ -613,7 +639,8 @@ export function createCustomAgent(agents: AgentDefinition[]): AgentDefinition {
     skills: ["Custom"], instructions: "", allowed_tools: ["Scroll Archive"],
     permissions: { data_scopes: ["guest_feedback"], actions: ["read"] },
     guardrails: ["Stay within budget limits"],
-    model_policy: "Use LLM for reasoning. Prefer tools and code first.",
+    model_policy: "auto",
+    allowed_integrations: [],
     budget: { max_llm_cost_usd: 0.5, max_llm_calls: 2 }, estimated_cost_usd: 0.05,
   };
 }

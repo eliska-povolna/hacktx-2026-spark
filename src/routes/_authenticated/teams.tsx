@@ -64,6 +64,8 @@ function TeamsPage() {
       await deleteSavedTeam(party.id);
       await queryClient.invalidateQueries({ queryKey: savedTeamsQueryOptions.queryKey });
       toast.success(copy.toastTeamRemoved(party.name));
+      // Clear Create if it had this saved team open.
+      navigate({ to: "/create", search: {} });
     } catch (error) { toast.error(error instanceof Error ? error.message : "Could not delete the team."); }
     finally { setBusyId(null); }
   };

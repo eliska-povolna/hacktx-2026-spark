@@ -29,11 +29,13 @@ import type {
   Attachment,
   AuditEvent,
   BackendRun,
+  ContextSource,
   CreateRunInput,
   DemoCustomer,
   DemoSession,
   Integration,
   LogEvent,
+  MobilityTriggerResponse,
   PlanTeamResponse,
   QuestLogEntry,
   QuestReward,
@@ -44,9 +46,10 @@ import type {
   RunTask,
   SavedParty,
   TaskStatus,
+  WorkStyle,
 } from "./types";
 import type { PlanningInterface, SavedTeam, SavedTeamSummary, SaveTeamInput } from "./types";
-import { assignFunctionIdentities, FUNCTION_NAMES, getPortrait, getSampleAgentsForTheme, getThemePortraitByIndex } from "@/lib/theme";
+import { assignFunctionIdentities, FUNCTION_NAMES, getSampleAgentsForTheme, getThemePortraitByIndex } from "@/lib/theme";
 
 const USE_MOCK = (import.meta.env["VITE_USE_MOCK_API"] ?? "false") === "true";
 const API_BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "https://questmaster.tech/api";
@@ -74,9 +77,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     const body: unknown = await res.json().catch(() => null);
     const error = body && typeof body === "object" && "error" in body ? body.error : null;
+    const detail = body && typeof body === "object" && "detail" in body ? body.detail : null;
+    const detailMessage =
+      detail && typeof detail === "object" && "message" in detail && typeof detail.message === "string"
+        ? detail.message
+        : typeof detail === "string" ? detail : undefined;
     const candidate = error && typeof error === "object" && "message" in error ? error.message
       : body && typeof body === "object" && "message" in body ? body.message
-      : body && typeof body === "object" && "detail" in body ? body.detail : undefined;
+      : detailMessage;
     const message = typeof candidate === "string" && candidate.trim() ? candidate : undefined;
     throw new ApiRequestError(message ?? `API request failed: ${res.status} ${path}`, message);
   }
@@ -125,8 +133,6 @@ export async function createDemoSession(): Promise<DemoSession> {
 // theme; unclassifiable agents keep stable identity hashing into the
 // remaining pool. The backend's descriptive name moves to the role when
 // the role is missing.
-const CANONICAL_NAMES = new Set(Object.values(FUNCTION_NAMES));
-
 export function normalizeAgents(agents: Partial<AgentDefinition>[], theme: PlanningInterface = "fantasy"): AgentDefinition[] {
   const withIds = agents.map((agent, i) => ({
     ...agent,
@@ -137,12 +143,12 @@ export function normalizeAgents(agents: Partial<AgentDefinition>[], theme: Plann
   return withIds.map((agent, i) => {
     const purpose = agent.purpose ?? "";
     const identity = identities[i];
+    // Keep planner-chosen names; only fill missing roles from the persona label.
     const personaName = identity ? FUNCTION_NAMES[identity.key as keyof typeof FUNCTION_NAMES] : undefined;
-    const keepName = CANONICAL_NAMES.has(agent.name);
     return {
       id: agent.id,
-      name: keepName ? agent.name : (personaName ?? agent.name),
-      role: agent.role ?? (keepName || !personaName ? "Specialist" : agent.name),
+      name: agent.name,
+      role: agent.role ?? personaName ?? "Specialist",
       purpose,
       description: agent.description || purpose,
       skills: agent.skills ?? [],
@@ -154,6 +160,7 @@ export function normalizeAgents(agents: Partial<AgentDefinition>[], theme: Plann
       budget: agent.budget ?? { max_llm_cost_usd: 0.05, max_llm_calls: 2 },
       estimated_cost_usd: agent.estimated_cost_usd ?? 0,
       portrait: agent.portrait?.trim() || identity?.portrait || getThemePortraitByIndex(theme, i),
+      allowed_integrations: agent.allowed_integrations ?? [],
       ...(agent.customized !== undefined ? { customized: agent.customized } : {}),
     };
   });
@@ -229,7 +236,40 @@ export function normalizeRun(raw: BackendRun): Run {
   };
 }
 
-export async function planTeam(goal: string, interfaceTheme: PlanningInterface = "fantasy", attachment_ids: string[] = []): Promise<PlanTeamResponse> {
+export async function getContextSources(): Promise<ContextSource[]> {
+  if (USE_MOCK) {
+    await mockDelay();
+    return [
+      { id: "toyota_customer", type: "builtin", label: "Toyota customer context", status: "ready", dismissible: true, description: "Synthetic Toyota customer, vehicle, contract, and usage.", executor_hint: "CODE" },
+      { id: "nessie_banking", type: "builtin", label: "Nessie banking", status: "ready", dismissible: true, description: "Banking summary used for financial context (no raw rows in the UI).", executor_hint: "TOOL" },
+    ];
+  }
+  const res = await request<{ sources: ContextSource[] }>("/context-sources");
+  return res.sources;
+}
+
+export async function evaluateMobilityTrigger(
+  customerId: string,
+  startRunIfRelevant = false,
+  teamId?: string,
+): Promise<MobilityTriggerResponse> {
+  return request<MobilityTriggerResponse>("/triggers/mobility/evaluate", {
+    method: "POST",
+    body: JSON.stringify({
+      customer_id: customerId,
+      start_run_if_relevant: startRunIfRelevant,
+      ...(teamId ? { team_id: teamId } : {}),
+    }),
+  });
+}
+
+export async function planTeam(
+  goal: string,
+  interfaceTheme: PlanningInterface = "fantasy",
+  attachment_ids: string[] = [],
+  options: { context_source_ids?: string[]; work_style?: WorkStyle } = {},
+): Promise<PlanTeamResponse> {
+  const workStyle = options.work_style ?? "balanced";
   if (USE_MOCK) {
     await mockDelay();
     return {
@@ -238,6 +278,7 @@ export async function planTeam(goal: string, interfaceTheme: PlanningInterface =
         team_name: interfaceTheme === "toyota" ? "Mobility Decision Team" : interfaceTheme === "professional" ? "Customer Insight Team" : "Moonlit Griffin Quest Party",
         summary: `Assembled for: ${goal.slice(0, 120)}`,
         agents: getSampleAgentsForTheme(interfaceTheme, MOCK_AGENTS),
+        policy: { max_llm_calls: 6, max_llm_cost_usd: 0.2, work_style: workStyle, guardrails: [] },
       },
       planner_source: "LLM",
       fallback_used: false,
@@ -245,12 +286,31 @@ export async function planTeam(goal: string, interfaceTheme: PlanningInterface =
   }
   const res = await request<PlanTeamResponse>("/teams/plan", {
     method: "POST",
-    body: JSON.stringify({ goal, interface_theme: interfaceTheme, max_team_size: 5, budget_preference: "balanced", attachment_ids }),
+    body: JSON.stringify({
+      goal,
+      interface_theme: interfaceTheme,
+      max_team_size: 5,
+      budget_preference: workStyle,
+      attachment_ids,
+      context_source_ids: options.context_source_ids ?? [],
+    }),
   });
   if (res.fallback_used === true) {
     throw new ApiRequestError("Planner returned a fallback team.");
   }
-  return { ...res, team: { ...res.team, agents: normalizeAgents(res.team.agents, interfaceTheme) } };
+  return {
+    ...res,
+    team: {
+      ...res.team,
+      agents: normalizeAgents(res.team.agents, interfaceTheme),
+      policy: res.team.policy ?? {
+        max_llm_calls: 6,
+        max_llm_cost_usd: 0.2,
+        work_style: workStyle,
+        guardrails: [],
+      },
+    },
+  };
 }
 
 // Tiger stores summaries separately from full team definitions.
@@ -385,14 +445,21 @@ export async function createRun(input: CreateRunInput): Promise<{ run_id: string
   // object from planTeam, and the demo customer in context. The 202 response
   // carries only { run_id, status: "PLANNING" }; the recommendation arrives
   // later via polling.
+  const attachment_ids = input.attachment_ids ?? [];
+  const context_source_ids = input.context_source_ids ?? [];
   return request<{ run_id: string; status: RunStatus }>("/runs", {
     method: "POST",
     body: JSON.stringify({
       goal: input.goal,
       team: input.team,
-      attachment_ids: input.attachment_ids ?? [],
-      context: { customer_id: input.customerId, attachment_ids: input.attachment_ids ?? [] },
-      quality_mode: "normal",
+      attachment_ids,
+      context_source_ids,
+      context: {
+        customer_id: input.customerId,
+        attachment_ids,
+        context_source_ids,
+      },
+      quality_mode: input.quality_mode ?? "normal",
     }),
   });
 }

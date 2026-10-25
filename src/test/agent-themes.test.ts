@@ -60,14 +60,14 @@ describe("Agent identities across interface styles", () => {
     expect(classifyAgentFunction({ role: "Chaos Wizard" })).toBeNull();
   });
 
-  it("gives live-planned agents the persona name of their function, keeping the role as the function label", () => {
+  it("keeps planner-chosen names and assigns portraits by function", () => {
     const planned = [
       { id: "agent_01", name: "Ledger Sage", role: "Financial Analyst" },
       { id: "agent_02", name: "Pipeline Smith", role: "Data Engineer" },
       { id: "agent_03", name: "Herald", role: "Customer Support Writer" },
     ];
     const agents = normalizeAgents(planned, "fantasy");
-    expect(agents.map((agent) => agent.name)).toEqual(["Maya", "Kenji", "Amara"]);
+    expect(agents.map((agent) => agent.name)).toEqual(["Ledger Sage", "Pipeline Smith", "Herald"]);
     expect(agents.map((agent) => agent.role)).toEqual(["Financial Analyst", "Data Engineer", "Customer Support Writer"]);
     expect(agents[0]?.portrait).toBe(getPortrait("fantasy", "maya"));
     expect(agents[1]?.portrait).toBe(getPortrait("fantasy", "kenji"));
@@ -86,8 +86,17 @@ describe("Agent identities across interface styles", () => {
     ];
     for (const theme of ["fantasy", "professional", "toyota"] as const) {
       const agents = normalizeAgents(planned, theme);
-      expect(agents.map((agent) => agent.name)).toEqual(["Maya", "Odo", "Rowan", "Selene", "Kenji", "Amara", "Brann"]);
+      expect(agents.map((agent) => agent.name)).toEqual(["F1", "F2", "F3", "F4", "F5", "F6", "F7"]);
       expect(new Set(agents.map((agent) => agent.portrait)).size).toBe(7);
+      expect(agents.map((agent) => agent.portrait)).toEqual([
+        getPortrait(theme, "maya"),
+        getPortrait(theme, "odo"),
+        getPortrait(theme, "rowan"),
+        getPortrait(theme, "selene"),
+        getPortrait(theme, "kenji"),
+        getPortrait(theme, "amara"),
+        getPortrait(theme, "brann"),
+      ]);
     }
   });
 

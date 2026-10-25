@@ -17,9 +17,30 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { ApiRequestError, createRun, deleteAttachment, getDemoCustomers, getRun, getSavedTeam, isMockMode, planTeam, saveTeam, uploadAttachment } from "@/api/client";
+import {
+  ApiRequestError,
+  createRun,
+  deleteAttachment,
+  evaluateMobilityTrigger,
+  getContextSources,
+  getDemoCustomers,
+  getRun,
+  getSavedTeam,
+  isMockMode,
+  planTeam,
+  saveTeam,
+  uploadAttachment,
+} from "@/api/client";
 import { savedTeamsQueryOptions } from "@/api/saved-teams-query";
-import type { AgentDefinition, Attachment, DemoCustomer, Run, TeamDefinition } from "@/api/types";
+import type {
+  AgentDefinition,
+  Attachment,
+  ContextSource,
+  DemoCustomer,
+  Run,
+  TeamDefinition,
+  WorkStyle,
+} from "@/api/types";
 import { AdventurerCard } from "@/components/AdventurerCard";
 import { CharacterSheet } from "@/components/CharacterSheet";
 import { ConfigureAdventurerDialog } from "@/components/ConfigureAdventurerDialog";
@@ -64,13 +85,27 @@ export const Route = createFileRoute("/_authenticated/create")({
 
 const CHIP_ICONS = [FileText, BarChart3, Trophy, Shield, Link2];
 
-const TERMINAL_STATUSES = new Set(["COMPLETED", "FAILED", "BUDGET_LIMIT", "APPROVAL_REQUIRED"]);
+const TERMINAL_STATUSES = new Set([
+  "COMPLETED",
+  "FAILED",
+  "BUDGET_LIMIT",
+  "APPROVAL_REQUIRED",
+  "NO_ACTION_NEEDED",
+]);
 
 const TERMINAL_MESSAGES: Record<string, string> = {
   FAILED: "The run failed before completing. Adjust the goal or team and run again.",
   BUDGET_LIMIT: "The run stopped when it reached its budget limit. Partial results are shown above.",
   APPROVAL_REQUIRED: "The run is paused — it needs your approval before it can continue.",
+  NO_ACTION_NEEDED:
+    "No mobility action is needed for this customer right now. Banking and recommendation steps were skipped.",
 };
+
+const WORK_STYLES: { value: WorkStyle; label: string }[] = [
+  { value: "fast", label: "Fast" },
+  { value: "balanced", label: "Balanced" },
+  { value: "thorough", label: "Thorough" },
+];
 
 function QuestForgePage() {
   const { theme } = useTheme();
@@ -97,9 +132,16 @@ function QuestForgePage() {
   const [customers, setCustomers] = useState<DemoCustomer[]>([]);
   const [customerError, setCustomerError] = useState(false);
   const [customerId, setCustomerId] = useState("customer-stable");
+  const [contextSources, setContextSources] = useState<ContextSource[]>([]);
+  const [enabledSourceIds, setEnabledSourceIds] = useState<string[]>([]);
+  const [workStyle, setWorkStyle] = useState<WorkStyle>("balanced");
+  const [triggering, setTriggering] = useState(false);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sheetRef = useRef<HTMLElement | null>(null);
+  const loadedTeamIdRef = useRef<string | null>(null);
   const isMobile = useIsMobile();
+  const toyotaEnabled = enabledSourceIds.includes("toyota_customer");
+  const nessieEnabled = enabledSourceIds.includes("nessie_banking");
 
   // Sample-goal switching: when the theme changes, replace the quest text
   // ONLY if it is still the previous theme's untouched sample (or empty).
@@ -115,14 +157,27 @@ function QuestForgePage() {
   }, [theme, plannedTeam]);
 
   useEffect(() => {
-    if (!teamId) return;
+    if (!teamId) {
+      if (loadedTeamIdRef.current) {
+        loadedTeamIdRef.current = null;
+        setPlannedTeam(null);
+        setAgents([]);
+        setSelectedId(null);
+        setConfigureId(null);
+        setRun(null);
+        setQuest(THEME_COPY[readTheme()].sampleQuest);
+      }
+      return;
+    }
     let active = true;
     setLoadingTeam(true);
     getSavedTeam(teamId).then((team) => {
       if (!active) return;
+      loadedTeamIdRef.current = teamId;
       setPlannedTeam(team); setAgents(team.agents); setQuest(team.goal);
       setSelectedId(team.agents[0]?.id ?? null);
       setRun(null);
+      if (team.policy?.work_style) setWorkStyle(team.policy.work_style);
     }).catch((error) => { if (active) toast.error(error instanceof Error ? error.message : "Could not open the saved team."); })
       .finally(() => { if (active) setLoadingTeam(false); });
     return () => { active = false; };
@@ -152,6 +207,20 @@ function QuestForgePage() {
         toast.error("Customer data is unavailable. Please reload before running the team.");
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    getContextSources()
+      .then((sources) => {
+        const builtins = sources.filter((source) => source.type === "builtin" || !source.id.startsWith("file:"));
+        setContextSources(builtins);
+        setEnabledSourceIds((current) =>
+          current.length > 0 ? current.filter((id) => builtins.some((source) => source.id === id)) : builtins.map((source) => source.id),
+        );
+      })
+      .catch(() => {
+        toast.error("Context sources are unavailable. Reload before running.");
+      });
   }, []);
 
   const stopPolling = () => {
@@ -202,8 +271,23 @@ function QuestForgePage() {
     try {
       const goal = quest;
       const planningTheme = theme;
-      const res = await planTeam(goal, planningTheme, attachments.map((file) => file.id));
-      setPlannedTeam(res.team);
+      const sourceIds = [
+        ...enabledSourceIds,
+        ...attachments.map((file) => `file:${file.id}`),
+      ];
+      const res = await planTeam(goal, planningTheme, attachments.map((file) => file.id), {
+        context_source_ids: sourceIds,
+        work_style: workStyle,
+      });
+      setPlannedTeam({
+        ...res.team,
+        policy: {
+          max_llm_calls: res.team.policy?.max_llm_calls ?? 6,
+          max_llm_cost_usd: res.team.policy?.max_llm_cost_usd ?? 0.2,
+          work_style: workStyle,
+          guardrails: res.team.policy?.guardrails ?? [],
+        },
+      });
       setAgents(res.team.agents);
       setSelectedId(res.team.agents[0]?.id ?? null);
       toast.success("Your team has assembled.");
@@ -241,6 +325,8 @@ function QuestForgePage() {
           setRunning(false);
           if (next.status === "COMPLETED") {
             toast.success("Run completed — results revealed.");
+          } else if (next.status === "NO_ACTION_NEEDED") {
+            toast.info("No mobility action needed for this customer.");
           } else if (next.status === "FAILED") {
             toast.error("The run failed. Adjust the goal or team and try again.");
           } else if (next.status === "BUDGET_LIMIT") {
@@ -263,24 +349,71 @@ function QuestForgePage() {
 
   const startRun = async () => {
     if (running) return;
+    if (!toyotaEnabled) {
+      toast.error(
+        "Enable Toyota customer context to run the mobility decision team, or dismiss it only after you finish planning a non-Toyota goal.",
+      );
+      return;
+    }
+    if (customerError || customers.length === 0) {
+      toast.error("Customer data is unavailable. Reload before running.");
+      return;
+    }
     setRunning(true);
     setRun(null);
     try {
-      // API_SPEC §9: send the full payload — goal, the whole team (including
-      // any edits/removals/custom agents), and the selected demo customer.
-      // Send the canonical generated configuration in every interface.
+      const sourceIds = [
+        ...enabledSourceIds,
+        ...attachments.map((file) => `file:${file.id}`),
+      ];
       const team: TeamDefinition = {
         id: plannedTeam?.id ?? "custom-team",
         team_name: plannedTeam?.team_name ?? "Custom Team",
         summary: plannedTeam?.summary ?? quest.slice(0, 120),
         agents: baseAgents.map((agent) => ({ ...agent, portrait: "" })),
+        policy: {
+          max_llm_calls: plannedTeam?.policy?.max_llm_calls ?? 6,
+          max_llm_cost_usd: plannedTeam?.policy?.max_llm_cost_usd ?? 0.2,
+          work_style: workStyle,
+          guardrails: plannedTeam?.policy?.guardrails ?? [],
+        },
       };
-      const { run_id } = await createRun({ goal: quest, team, customerId, attachment_ids: attachments.map((file) => file.id) });
+      const { run_id } = await createRun({
+        goal: quest,
+        team,
+        customerId,
+        attachment_ids: attachments.map((file) => file.id),
+        context_source_ids: sourceIds,
+        quality_mode: workStyle === "thorough" ? "strict" : "normal",
+      });
       pollRun(run_id);
     } catch (error) {
       setRunning(false);
       toast.error(error instanceof ApiRequestError ? error.message : copy.toastRunError);
     }
+  };
+
+  const runMobilityTrigger = async () => {
+    if (triggering || !toyotaEnabled) return;
+    setTriggering(true);
+    try {
+      const result = await evaluateMobilityTrigger(customerId, false);
+      if (result.relevant) {
+        toast.success(`Mobility trigger relevant: ${result.reasons[0] ?? "action recommended"}`);
+      } else {
+        toast.info(result.reasons[0] ?? "No mobility action needed.");
+      }
+    } catch (error) {
+      toast.error(error instanceof ApiRequestError ? error.message : "Could not evaluate mobility trigger.");
+    } finally {
+      setTriggering(false);
+    }
+  };
+
+  const toggleContextSource = (id: string) => {
+    setEnabledSourceIds((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+    );
   };
 
   const saveAgent = (updated: AgentDefinition) => {
@@ -334,12 +467,35 @@ function QuestForgePage() {
           placeholder={copy.sampleQuest}
         />
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          {copy.contextChips.map((label, i) => {
+          {(contextSources.length > 0 ? contextSources : copy.contextChips.map((label, i) => ({
+            id: `legacy-${i}`,
+            label,
+            dismissible: false,
+            description: "",
+            type: "legacy",
+            status: "ready",
+          }))).map((source, i) => {
             const ChipIcon = CHIP_ICONS[i % CHIP_ICONS.length] ?? FileText;
+            const enabled = "id" in source && !String(source.id).startsWith("legacy-")
+              ? enabledSourceIds.includes(source.id)
+              : true;
+            const dismissible = "dismissible" in source ? source.dismissible : false;
             return (
-              <span key={label} className="chip-parchment">
-                <ChipIcon className="h-3 w-3" /> {label}
-              </span>
+              <button
+                key={source.id}
+                type="button"
+                title={"description" in source ? source.description : source.label}
+                disabled={!dismissible || planning || running}
+                onClick={() => dismissible && toggleContextSource(source.id)}
+                className={cn(
+                  "chip-parchment",
+                  dismissible && "cursor-pointer",
+                  !enabled && "opacity-40 line-through",
+                )}
+              >
+                <ChipIcon className="h-3 w-3" /> {source.label}
+                {dismissible && enabled && <X className="h-3 w-3 opacity-60" />}
+              </button>
             );
           })}
         </div>
@@ -381,9 +537,27 @@ function QuestForgePage() {
             </span>
           ))}
         </div>
+        <p className="mt-2 text-[11px] text-ink-soft">
+          Files shape team planning (excerpts go to the planner). Runtime execution still uses enabled context sources — enable Toyota customer context to run the mobility demo.
+        </p>
         {/* Controls: full-width rows on phones, inline group on larger screens */}
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-          {agents.length > 0 && customers.length > 0 && (
+          <label className="flex w-full flex-col gap-1 text-xs font-semibold text-ink-soft sm:w-auto sm:flex-row sm:items-center sm:gap-2">
+            Work style
+            <select
+              value={workStyle}
+              onChange={(e) => setWorkStyle(e.target.value as WorkStyle)}
+              className="parchment-inset w-full max-w-full truncate px-2 py-2 text-xs text-ink outline-none focus:border-gold-dim sm:w-auto sm:py-1.5"
+              disabled={planning || running}
+            >
+              {WORK_STYLES.map((style) => (
+                <option key={style.value} value={style.value}>
+                  {style.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {agents.length > 0 && toyotaEnabled && customers.length > 0 && (
             <label className="flex w-full flex-col gap-1 text-xs font-semibold text-ink-soft sm:w-auto sm:flex-row sm:items-center sm:gap-2">
               Customer
               <select
@@ -399,11 +573,39 @@ function QuestForgePage() {
               </select>
             </label>
           )}
+          {agents.length > 0 && toyotaEnabled && (
+            <button
+              type="button"
+              onClick={runMobilityTrigger}
+              disabled={triggering || running || planning || customerError || customers.length === 0}
+              className="btn-outline-gold w-full px-4 py-2.5 text-sm !text-ink sm:w-auto sm:py-2"
+            >
+              {triggering ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Checking trigger...
+                </>
+              ) : (
+                <>
+                  <Link2 className="h-4 w-4" /> Check Trigger
+                </>
+              )}
+            </button>
+          )}
           {agents.length > 0 && (
             <button
               onClick={startRun}
-              disabled={running || planning || loadingTeam || uploading || deletingId !== null || customerError || customers.length === 0}
+              disabled={
+                running ||
+                planning ||
+                loadingTeam ||
+                uploading ||
+                deletingId !== null ||
+                !toyotaEnabled ||
+                customerError ||
+                customers.length === 0
+              }
               className="btn-outline-gold w-full px-4 py-2.5 text-sm !text-ink sm:w-auto sm:py-2"
+              title={!toyotaEnabled ? "Enable Toyota customer context to run" : undefined}
             >
               {running ? (
                 <>
@@ -432,6 +634,11 @@ function QuestForgePage() {
             )}
           </button>
         </div>
+        {agents.length > 0 && !toyotaEnabled && (
+          <p className="mt-2 text-[11px] text-ink-soft">
+            Run is locked without Toyota customer context — the live executor is the mobility decision pipeline. Nessie banking is {nessieEnabled ? "on" : "off"}.
+          </p>
+        )}
       </section>
 
       {/* SECTION 2 — Team */}
@@ -599,7 +806,13 @@ function QuestForgePage() {
         </div>
       )}
 
-      {run && <RunDetails run={run} toyota={theme === "toyota"} />}
+      {run && (
+        <RunDetails
+          run={run}
+          toyota={theme === "toyota" || toyotaEnabled || Boolean(run.recommendation || run.financial_context)}
+          showNessie={nessieEnabled || Boolean(run.financial_context)}
+        />
+      )}
 
       {/* Run status banner — in progress */}
       {run && !TERMINAL_STATUSES.has(run.status) && (

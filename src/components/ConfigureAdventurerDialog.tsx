@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 
-import type { AgentDefinition } from "@/api/types";
+import type { AgentDefinition, ModelPolicy } from "@/api/types";
 import { THEME_COPY, useTheme } from "@/lib/theme";
 
 interface Props {
@@ -10,6 +10,14 @@ interface Props {
   onSave: (agent: AgentDefinition) => void;
   onRemove: (id: string) => void;
 }
+
+const MODEL_POLICIES: { value: ModelPolicy; label: string }[] = [
+  { value: "auto", label: "Auto — prefer code/tools, use LLM when needed" },
+  { value: "deterministic_only", label: "Deterministic only — no LLM" },
+  { value: "llm_allowed", label: "LLM allowed — reasoning enabled" },
+];
+
+const INTEGRATION_OPTIONS = ["nessie", "meta"];
 
 const fieldClass =
   "parchment-inset w-full px-3 py-2 text-sm text-ink outline-none focus:border-gold-dim";
@@ -87,7 +95,6 @@ export function ConfigureAdventurerDialog({ agent, onClose, onSave, onRemove }: 
     setDraft(agent);
   }, [agent]);
 
-  // Escape closes the dialog (accessible modal behavior).
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -99,6 +106,7 @@ export function ConfigureAdventurerDialog({ agent, onClose, onSave, onRemove }: 
   if (!draft) return null;
 
   const update = (patch: Partial<AgentDefinition>) => setDraft({ ...draft, ...patch });
+  const integrations = draft.allowed_integrations ?? [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-stretch justify-center sm:items-center sm:p-4">
@@ -139,12 +147,32 @@ export function ConfigureAdventurerDialog({ agent, onClose, onSave, onRemove }: 
             />
           </div>
           <div>
+            <label className={labelClass}>Instructions</label>
+            <textarea
+              value={draft.instructions}
+              onChange={(e) => update({ instructions: e.target.value })}
+              rows={3}
+              className={fieldClass}
+              placeholder="How this agent should behave during the run"
+            />
+          </div>
+          <div>
             <label className={labelClass}>Model policy</label>
-            <input
-              value={draft.model_policy}
+            <select
+              value={
+                MODEL_POLICIES.some((p) => p.value === draft.model_policy)
+                  ? draft.model_policy
+                  : "auto"
+              }
               onChange={(e) => update({ model_policy: e.target.value })}
               className={fieldClass}
-            />
+            >
+              {MODEL_POLICIES.map((policy) => (
+                <option key={policy.value} value={policy.value}>
+                  {policy.label}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
@@ -193,6 +221,39 @@ export function ConfigureAdventurerDialog({ agent, onClose, onSave, onRemove }: 
             onChange={(data_scopes) => update({ permissions: { ...draft.permissions, data_scopes } })}
             placeholder="Add a data scope"
           />
+          <ListEditor
+            label="Allowed actions"
+            items={draft.permissions.actions}
+            onChange={(actions) => update({ permissions: { ...draft.permissions, actions } })}
+            placeholder="e.g. read, calculate, recommend"
+          />
+          <div>
+            <span className={labelClass}>Integrations (named grants only)</span>
+            <div className="flex flex-wrap gap-3">
+              {INTEGRATION_OPTIONS.map((id) => {
+                const checked = integrations.includes(id);
+                return (
+                  <label key={id} className="flex items-center gap-2 text-sm text-ink">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() =>
+                        update({
+                          allowed_integrations: checked
+                            ? integrations.filter((item) => item !== id)
+                            : [...integrations, id],
+                        })
+                      }
+                    />
+                    {id}
+                  </label>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-[11px] text-ink-soft">
+              Empty list means no extra restriction beyond tools/scopes. Secrets stay on the server.
+            </p>
+          </div>
           <ListEditor
             label="Guardrails"
             items={draft.guardrails}

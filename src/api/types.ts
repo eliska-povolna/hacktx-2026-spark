@@ -10,7 +10,11 @@ export type RunStatus =
   | "COMPLETED"
   | "FAILED"
   | "BUDGET_LIMIT"
-  | "APPROVAL_REQUIRED";
+  | "APPROVAL_REQUIRED"
+  | "NO_ACTION_NEEDED";
+
+export type WorkStyle = "fast" | "balanced" | "thorough";
+export type ModelPolicy = "auto" | "deterministic_only" | "llm_allowed";
 
 export type TaskStatus =
   | "WAITING"
@@ -45,9 +49,18 @@ export interface AgentDefinition {
   budget: BudgetPolicy;
   estimated_cost_usd: number;
   portrait: string;
+  /** Named integration grants only (e.g. nessie, meta). Secrets stay server-side. */
+  allowed_integrations?: string[];
   /** Set when the user explicitly edited this agent — theme overlays then
    *  leave their role/skills/tools/scopes untouched (portrait still swaps). */
   customized?: boolean;
+}
+
+export interface TeamPolicy {
+  max_llm_calls: number;
+  max_llm_cost_usd: number;
+  work_style: WorkStyle;
+  guardrails: string[];
 }
 
 export interface TeamDefinition {
@@ -55,6 +68,18 @@ export interface TeamDefinition {
   team_name: string;
   summary: string;
   agents: AgentDefinition[];
+  policy?: TeamPolicy;
+}
+
+export interface ContextSource {
+  id: string;
+  type: string;
+  label: string;
+  status: string;
+  dismissible: boolean;
+  description: string;
+  executor_hint?: string | null;
+  attachment_id?: string | null;
 }
 
 export interface PlanTeamResponse {
@@ -114,6 +139,10 @@ export interface RunMetrics {
   code_tasks: number;
   tool_tasks: number;
   llm_tasks: number;
+  work_style?: string;
+  last_model_tier?: string | null;
+  model_tiers_used?: string[];
+  routing_decisions?: number;
 }
 
 export interface QuestReward {
@@ -159,6 +188,15 @@ export interface CreateRunInput {
   team: TeamDefinition;
   customerId: string;
   attachment_ids?: string[];
+  context_source_ids?: string[];
+  quality_mode?: "normal" | "strict";
+}
+
+export interface MobilityTriggerResponse {
+  customer_id: string;
+  relevant: boolean;
+  reasons: string[];
+  run_id?: string | null;
 }
 
 export interface Attachment {
