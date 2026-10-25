@@ -379,24 +379,36 @@
   display: none !important;
 }
 
-/* Professional avatars: initial circle replaces fantasy portraits */
+/* Initial-letter fallback stays hidden — every theme has real portraits */
 .agent-portrait-initial {
   display: none;
 }
 
-[data-theme="professional"] .agent-portrait-img,
-[data-theme="toyota"] .agent-portrait-img {
-  display: none;
+/* Professional: round corporate avatars */
+[data-theme="professional"] .agent-portrait-img {
+  border-radius: var(--radius-md);
 }
 
-[data-theme="professional"] .agent-portrait-initial,
-[data-theme="toyota"] .agent-portrait-initial {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent);
-  color: var(--accent-foreground);
-  font-weight: 700;
+/* Toyota: automotive look — red top accent on panels, carbon sidebar */
+[data-theme="toyota"] .parchment-panel {
+  border-top: 3px solid var(--primary);
+}
+
+[data-theme="toyota"] .wood-panel {
+  background:
+    linear-gradient(180deg, oklch(0.22 0.01 260 / 97%), oklch(0.16 0.01 260 / 99%)),
+    repeating-linear-gradient(45deg, oklch(0.24 0.01 260) 0 2px, oklch(0.19 0.01 260) 2px 4px);
+  border-right: 1px solid oklch(0.35 0.01 260);
+}
+
+[data-theme="toyota"] .wood-panel .font-display,
+[data-theme="toyota"] .wood-panel h1,
+[data-theme="toyota"] .wood-panel h2 {
+  color: oklch(0.97 0.005 250);
+}
+
+[data-theme="toyota"] .agent-portrait-img {
+  border-bottom: 3px solid var(--primary);
 }
 
 /* Toyota: subtle road-line accent under the main heading */

@@ -23,6 +23,7 @@ import { ExecutorBadge } from "@/components/ExecutorBadge";
 import { PORTRAITS } from "@/api/mockData";
 import {
   getAgentsForTheme,
+  getPortrait,
   THEME_COPY,
   TOYOTA_METRICS,
   TOYOTA_REWARD,
