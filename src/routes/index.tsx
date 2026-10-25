@@ -161,8 +161,9 @@ function LoginPage() {
             continueAsDemo();
             navigate({ to: "/create" });
           }}
-          className="chip-parchment w-full px-4 py-2.5 text-sm font-semibold"
+          className="btn-secondary w-full px-4 py-2.5 text-sm"
         >
+          <UserRound className="h-4 w-4" aria-hidden="true" />
           {copy.auth.demoButton}
         </button>
         <p className="mt-2 text-center text-[11px] italic text-ink-soft">
