@@ -36,6 +36,7 @@
 - [x] Live mode is the default; local .env (gitignored) enables mock mode for the preview
 
 ## Open
+- [ ] Live API polish: stable themed portraits for unfamiliar agents, remove future-backend stubs, reject failed/fallback plans and verify live UI.
 - [x] Generate from the active interface goal and keep generated configurations identical across styles.
 - [x] Prepare external saved-team CRUD, reopening by teamId, editing and explicit Save Team; no mock fallback in live mode.
 - [x] Supply backend implementation prompts in docs/QuestMaster_TEAM_BACKEND_PROMPTS.md; verify interface switching and session mock CRUD.

@@ -3,6 +3,18 @@ import { MOCK_AGENTS, PORTRAITS } from "@/api/mockData";
 import { createCustomAgent, getAgentsForTheme, getPortrait } from "@/lib/theme";
 
 describe("Agent identities across interface styles", () => {
+  it("keeps live portrait identities stable across team order and uses each theme's jpg pool", () => {
+    const live = ["agent_navigator_01", "agent_lunar_beekeeper_02"];
+    for (const id of live) {
+      const portraits = ["fantasy", "professional", "toyota"].map((theme) => getPortrait(theme as "fantasy" | "professional" | "toyota", id));
+      expect(new Set(portraits).size).toBe(3);
+      for (const portrait of portraits) expect(portrait).toMatch(/\.jpg(?:\?|$)/);
+    }
+    const agents = live.map((id) => ({ ...createCustomAgent([]), id, name: id }));
+    expect(getAgentsForTheme("toyota", [...agents].reverse()).map((a) => a.portrait).reverse())
+      .toEqual(getAgentsForTheme("toyota", agents).map((a) => a.portrait));
+    expect(getPortrait("professional", "unknown-id", "Maya")).toBe(getPortrait("professional", "maya"));
+  });
   it("preserves every generated configuration field across all interfaces", () => {
     const original = MOCK_AGENTS[0];
     if (!original) throw new Error("Missing agent fixture");

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { createRun, getDemoCustomers, getRun, getSavedTeam, isMockMode, planTeam, saveTeam } from "@/api/client";
+import { ApiRequestError, createRun, getDemoCustomers, getRun, getSavedTeam, isMockMode, planTeam, saveTeam } from "@/api/client";
 import type { AgentDefinition, DemoCustomer, Run, TeamDefinition } from "@/api/types";
 import { AdventurerCard } from "@/components/AdventurerCard";
 import { CharacterSheet } from "@/components/CharacterSheet";
@@ -175,8 +175,8 @@ function QuestForgePage() {
         toast.warning("Team created, but not saved. The team storage service is unavailable.");
       }
       toast.success("Your team has assembled.");
-    } catch {
-      toast.error(copy.toastPlanError);
+    } catch (error) {
+      toast.error(error instanceof ApiRequestError ? error.displayMessage ?? copy.toastPlanError : copy.toastPlanError);
     } finally {
       setPlanning(false);
     }
@@ -306,13 +306,6 @@ function QuestForgePage() {
               </span>
             );
           })}
-          <button
-            type="button"
-            onClick={() => toast.info("File attachments arrive with the real backend.")}
-            className="chip-parchment border-dashed hover:border-gold-dim"
-          >
-            <Plus className="h-3 w-3" /> Add Files
-          </button>
         </div>
         {/* Controls: full-width rows on phones, inline group on larger screens */}
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">

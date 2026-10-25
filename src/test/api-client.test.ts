@@ -89,6 +89,11 @@ describe("normalizeRun", () => {
 });
 
 describe("normalizeAgents", () => {
+  it("assigns a bundled jpg to live agents with unfamiliar IDs and names", () => {
+    const agents = normalizeAgents([{ id: "agent_navigator_01", name: "Captain Marina" }, { name: "Lunar Beekeeper" }]);
+    expect(agents).toHaveLength(2);
+    for (const agent of agents) expect(agent.portrait).toMatch(/\.jpg(?:\?|$)/);
+  });
   it("fills the portrait from the local set and description from purpose", () => {
     const [maya] = normalizeAgents([
       {

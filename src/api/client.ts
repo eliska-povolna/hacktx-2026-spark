@@ -24,7 +24,6 @@ import {
   MOCK_REWARD_STRESSED,
   MOCK_RUN_HISTORY,
   MOCK_RUN_TASKS,
-  PORTRAITS,
 } from "./mockData";
 import type {
   AgentDefinition,
@@ -46,7 +45,7 @@ import type {
   TaskStatus,
 } from "./types";
 import type { PlanningInterface, SavedTeam, SaveTeamInput } from "./types";
-import { getSampleAgentsForTheme } from "@/lib/theme";
+import { getPortrait, getSampleAgentsForTheme } from "@/lib/theme";
 
 const USE_MOCK = (import.meta.env["VITE_USE_MOCK_API"] ?? "false") === "true";
 const API_BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "https://questmaster.tech/api";
@@ -59,13 +58,24 @@ function mockDelay() {
   return delay(300 + Math.random() * 600);
 }
 
+export class ApiRequestError extends Error {
+  constructor(message: string, readonly displayMessage?: string) {
+    super(message);
+    this.name = "ApiRequestError";
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...init,
   });
   if (!res.ok) {
-    throw new Error(`API request failed: ${res.status} ${path}`);
+    const body: unknown = await res.json().catch(() => null);
+    const error = body && typeof body === "object" && "error" in body ? body.error : null;
+    const message = error && typeof error === "object" && "message" in error
+      && typeof error.message === "string" && error.message.trim() ? error.message : undefined;
+    throw new ApiRequestError(message ?? `API request failed: ${res.status} ${path}`, message);
   }
   return res.status === 204 ? undefined as T : (await res.json()) as T;
 }
@@ -99,7 +109,6 @@ export async function createDemoSession(): Promise<DemoSession> {
 export function normalizeAgents(agents: Partial<AgentDefinition>[]): AgentDefinition[] {
   return agents.map((agent, i) => {
     const name = agent.name ?? `Agent ${i + 1}`;
-    const key = name.toLowerCase();
     const purpose = agent.purpose ?? "";
     return {
       id: agent.id ?? `agent-${i + 1}`,
@@ -115,7 +124,7 @@ export function normalizeAgents(agents: Partial<AgentDefinition>[]): AgentDefini
       model_policy: agent.model_policy ?? "auto",
       budget: agent.budget ?? { max_llm_cost_usd: 0.05, max_llm_calls: 2 },
       estimated_cost_usd: agent.estimated_cost_usd ?? 0,
-      portrait: agent.portrait || PORTRAITS[key] || PORTRAITS[agent.id ?? ""] || "",
+      portrait: agent.portrait || getPortrait("fantasy", agent.id ?? `agent-${i + 1}`, name),
     };
   });
 }
@@ -205,6 +214,9 @@ export async function planTeam(goal: string, interfaceTheme: PlanningInterface =
     method: "POST",
     body: JSON.stringify({ goal, interface_theme: interfaceTheme, max_team_size: 5, budget_preference: "balanced" }),
   });
+  if (res.fallback_used === true) {
+    throw new ApiRequestError("Planner returned a fallback team.");
+  }
   return { ...res, team: { ...res.team, agents: normalizeAgents(res.team.agents) } };
 }
 
