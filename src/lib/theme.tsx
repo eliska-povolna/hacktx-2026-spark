@@ -73,6 +73,7 @@ export interface ThemeCopy {
     signInSub: string;
     signInButton: string;
     signInPending: string;
+    demoButton: string;
     signUpTitle: string;
     signUpSub: string;
     signUpButton: string;
@@ -146,6 +147,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
       signInSub: "Your party awaits.",
       signInButton: "Enter the Guild",
       signInPending: "Opening the gates...",
+      demoButton: "Enter as a Traveling Guest",
       signUpTitle: "Create Your Chronicle",
       signUpSub: "Every legend begins with a first page.",
       signUpButton: "Create Your Chronicle",
@@ -214,6 +216,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
       signInSub: "Sign in to your workspace.",
       signInButton: "Sign In",
       signInPending: "Signing in...",
+      demoButton: "Continue with Demo",
       signUpTitle: "Create your account",
       signUpSub: "Start building your AI team.",
       signUpButton: "Create Account",
@@ -282,6 +285,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
       signInSub: "Sign in to Toyota Mobility Studio.",
       signInButton: "Sign In",
       signInPending: "Signing in...",
+      demoButton: "Continue with Demo",
       signUpTitle: "Create your account",
       signUpSub: "Set up your decision workspace.",
       signUpButton: "Create Account",

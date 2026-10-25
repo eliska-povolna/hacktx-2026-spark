@@ -35,6 +35,8 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (email: string, password: string, remember: boolean) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
+  /** Sign in as a throwaway guest — no account, session ends with the tab. */
+  continueAsDemo: () => void;
   logout: () => void;
   resetPassword: (email: string, newPassword: string) => Promise<void>;
 }
@@ -148,6 +150,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [persistSession],
   );
 
+  const continueAsDemo = useCallback(() => {
+    const next: AuthUser = {
+      name: "Demo Guest",
+      email: "guest@demo.questmaster",
+      title: "Quest Master",
+    };
+    // sessionStorage only: the guest session ends when the tab closes.
+    persistSession(next, false);
+    setUser(next);
+  }, [persistSession]);
+
   const logout = useCallback(() => {
     persistSession(null, false);
     setUser(null);
@@ -172,6 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         login,
         signup,
+        continueAsDemo,
         logout,
         resetPassword,
       }}
