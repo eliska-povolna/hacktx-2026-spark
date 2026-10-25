@@ -1,9 +1,14 @@
 import { fireEvent, render, screen, cleanup } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
-import { ThemeProvider } from "@/lib/theme-context";
+import { readTheme, ThemeProvider } from "@/lib/theme-context";
 import { useTheme } from "@/lib/theme";
 
 afterEach(() => { cleanup(); localStorage.clear(); });
+
+it("starts a fresh user in Fantasy", () => {
+  localStorage.clear();
+  expect(readTheme()).toBe("fantasy");
+});
 
 it("shares the stable provider with consumers importing the theme facade", () => {
   function Consumer() {

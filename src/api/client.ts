@@ -420,7 +420,7 @@ export function normalizeAuditEvent(event: AuditEvent, index = 0): LogEvent {
     ? "SECURITY" : /run_/i.test(type) ? "QUEST" : event.executor_type ?? "QUEST";
   return { id: event.id ?? `event-${index}`, timestamp: event.timestamp ?? "", category,
     message: event.message ?? type, actor: event.agent_name ?? event.agent_id ?? "Platform",
-    event_type: type, run_id: event.run_id };
+    event_type: type, ...(event.run_id ? { run_id: event.run_id } : {}) };
 }
 
 export async function getIntegrations(): Promise<Integration[]> {
