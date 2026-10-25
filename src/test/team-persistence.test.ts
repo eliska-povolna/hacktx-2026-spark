@@ -35,7 +35,7 @@ describe("team generation and storage", () => {
       await planTeam("Study guest feedback", theme);
       const args = fetcher.mock.calls.at(-1);
       expect(JSON.parse(args?.[1].body)).toEqual({ goal: "Study guest feedback", interface_theme: theme,
-        max_team_size: 5, budget_preference: "balanced", attachment_ids: [] });
+        max_team_size: 5, budget_preference: "balanced", attachment_ids: [], context_source_ids: [] });
     }
   });
 

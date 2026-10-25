@@ -119,6 +119,7 @@ function QuestForgePage() {
   const agents = getAgentsForTheme(theme, baseAgents);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [planning, setPlanning] = useState(false);
+  const [planningError, setPlanningError] = useState<string | null>(null);
   const [configureId, setConfigureId] = useState<string | null>(null);
   const [run, setRun] = useState<Run | null>(null);
   const [running, setRunning] = useState(false);
@@ -142,6 +143,7 @@ function QuestForgePage() {
   const isMobile = useIsMobile();
   const toyotaEnabled = enabledSourceIds.includes("toyota_customer");
   const nessieEnabled = enabledSourceIds.includes("nessie_banking");
+  const isPortfolio = plannedTeam?.policy?.scope === "portfolio";
 
   // Sample-goal switching: when the theme changes, replace the quest text
   // ONLY if it is still the previous theme's untouched sample (or empty).
@@ -174,6 +176,7 @@ function QuestForgePage() {
     getSavedTeam(teamId).then((team) => {
       if (!active) return;
       loadedTeamIdRef.current = teamId;
+      setPlanningError(null);
       setPlannedTeam(team); setAgents(team.agents); setQuest(team.goal);
       setSelectedId(team.agents[0]?.id ?? null);
       setRun(null);
@@ -267,6 +270,7 @@ function QuestForgePage() {
       return;
     }
     setPlanning(true);
+    setPlanningError(null);
     setRun(null);
     try {
       const goal = quest;
@@ -282,6 +286,7 @@ function QuestForgePage() {
       setPlannedTeam({
         ...res.team,
         policy: {
+          ...res.team.policy,
           max_llm_calls: res.team.policy?.max_llm_calls ?? 6,
           max_llm_cost_usd: res.team.policy?.max_llm_cost_usd ?? 0.2,
           work_style: workStyle,
@@ -292,14 +297,16 @@ function QuestForgePage() {
       setSelectedId(res.team.agents[0]?.id ?? null);
       toast.success("Your team has assembled.");
     } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : copy.toastPlanError);
+      const message = error instanceof ApiRequestError ? error.message : copy.toastPlanError;
+      setPlanningError(message);
+      toast.error(message);
     } finally {
       setPlanning(false);
     }
   };
 
   const saveChanges = async () => {
-    if (!plannedTeam || saving) return;
+    if (!plannedTeam || saving || planningError) return;
     setSaving(true);
     try {
       const saved = await saveTeam({ goal: quest, team: { ...plannedTeam, agents: baseAgents } });
@@ -348,14 +355,14 @@ function QuestForgePage() {
   };
 
   const startRun = async () => {
-    if (running) return;
+    if (running || planningError) return;
     if (!toyotaEnabled) {
       toast.error(
         "Enable Toyota customer context to run the mobility decision team, or dismiss it only after you finish planning a non-Toyota goal.",
       );
       return;
     }
-    if (customerError || customers.length === 0) {
+    if (!isPortfolio && (customerError || customers.length === 0)) {
       toast.error("Customer data is unavailable. Reload before running.");
       return;
     }
@@ -372,6 +379,7 @@ function QuestForgePage() {
         summary: plannedTeam?.summary ?? quest.slice(0, 120),
         agents: baseAgents.map((agent) => ({ ...agent, portrait: "" })),
         policy: {
+          ...plannedTeam?.policy,
           max_llm_calls: plannedTeam?.policy?.max_llm_calls ?? 6,
           max_llm_cost_usd: plannedTeam?.policy?.max_llm_cost_usd ?? 0.2,
           work_style: workStyle,
@@ -381,7 +389,7 @@ function QuestForgePage() {
       const { run_id } = await createRun({
         goal: quest,
         team,
-        customerId,
+        customerId: isPortfolio ? "" : customerId,
         attachment_ids: attachments.map((file) => file.id),
         context_source_ids: sourceIds,
         quality_mode: workStyle === "thorough" ? "strict" : "normal",
@@ -484,7 +492,8 @@ function QuestForgePage() {
               <button
                 key={source.id}
                 type="button"
-                title={"description" in source ? source.description : source.label}
+                aria-pressed={enabled}
+                title={source.description || source.label}
                 disabled={!dismissible || planning || running}
                 onClick={() => dismissible && toggleContextSource(source.id)}
                 className={cn(
@@ -557,11 +566,12 @@ function QuestForgePage() {
               ))}
             </select>
           </label>
-          {agents.length > 0 && toyotaEnabled && customers.length > 0 && (
+          {agents.length > 0 && toyotaEnabled && !isPortfolio && customers.length > 0 && (
             <label className="flex w-full flex-col gap-1 text-xs font-semibold text-ink-soft sm:w-auto sm:flex-row sm:items-center sm:gap-2">
               Customer
               <select
                 value={customerId}
+                disabled={running || planning}
                 onChange={(e) => setCustomerId(e.target.value)}
                 className="parchment-inset w-full max-w-full truncate px-2 py-2 text-xs text-ink outline-none focus:border-gold-dim sm:w-auto sm:py-1.5"
               >
@@ -573,7 +583,7 @@ function QuestForgePage() {
               </select>
             </label>
           )}
-          {agents.length > 0 && toyotaEnabled && (
+          {agents.length > 0 && toyotaEnabled && !isPortfolio && (
             <button
               type="button"
               onClick={runMobilityTrigger}
@@ -600,9 +610,10 @@ function QuestForgePage() {
                 loadingTeam ||
                 uploading ||
                 deletingId !== null ||
+                Boolean(planningError) ||
                 !toyotaEnabled ||
-                customerError ||
-                customers.length === 0
+                (isPortfolio && !nessieEnabled) ||
+                (!isPortfolio && (customerError || customers.length === 0))
               }
               className="btn-outline-gold w-full px-4 py-2.5 text-sm !text-ink sm:w-auto sm:py-2"
               title={!toyotaEnabled ? "Enable Toyota customer context to run" : undefined}
@@ -641,6 +652,44 @@ function QuestForgePage() {
         )}
       </section>
 
+      {agents.length > 0 && toyotaEnabled && (
+        <section className="parchment-panel p-4" aria-label="Execution preview">
+          <h2 className="gold-heading text-lg font-bold">Before you run</h2>
+          {isPortfolio ? (
+            <>
+              <p className="mt-2 text-sm text-ink">This run evaluates the full synthetic Toyota demo portfolio. No offers, applications or transactions are submitted.</p>
+              <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-ink">
+                <li>CODE · Load the installed Toyota portfolio.</li>
+                {plannedTeam?.policy?.workflow_kind === "mobility_decision" && <li>CODE · Skip customers without a relevant mobility decision before any banking or LLM work.</li>}
+                <li>TOOL · Read Nessie for the remaining customers; CODE · derive financial summaries.</li>
+                <li>CODE · {plannedTeam?.policy?.workflow_kind === "loan_opportunity" ? "Rank financial fit for vehicle-loan outreach." : "Score mobility options and rank decision urgency."}</li>
+                <li>AGENT / LLM · Explain the deterministic shortlist using derived summaries only.</li>
+              </ol>
+              {!nessieEnabled && <p role="alert" className="mt-2 text-sm text-destructive">Enable Nessie banking to run this financial portfolio workflow.</p>}
+            </>
+          ) : (
+            <>
+              <p className="mt-2 text-sm text-ink">This run evaluates one selected Toyota customer. It does not scan the portfolio or send offers.</p>
+              <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-ink">
+                <li>TOOL · Load synthetic Toyota profile, vehicle, lease and usage context.</li>
+                <li>CODE · Check relevance. If no decision is due, stop with NO_ACTION_NEEDED, without Nessie or an LLM.</li>
+                {nessieEnabled ? <>
+                  <li>TOOL · Read Nessie banking data; CODE · derive financial summaries and score mobility options.</li>
+                  <li>AGENT / LLM · Explain scored options using derived summaries; CODE · validate the result. Policy may require a reviewer.</li>
+                </> : <li>Nessie is off: context and relevance checks only. No financial recommendation will be generated.</li>}
+              </ol>
+            </>
+          )}
+          <p className="mt-3 text-xs text-ink-soft">Run enforces the submitted tools, permissions and budgets. Missing access fails; it is never added automatically.</p>
+        </section>
+      )}
+
+      {planningError && (
+        <p role="alert" className="parchment-panel p-4 text-sm text-destructive">
+          {planningError} Assemble successfully or reload a saved team before running or saving. Any team still displayed is from the previous plan.
+        </p>
+      )}
+
       {/* SECTION 2 — Team */}
       {agents.length > 0 && (
         <section>
@@ -649,7 +698,7 @@ function QuestForgePage() {
             <span className="text-xs text-muted-foreground">
               {agents.length} {copy.readySuffix}
             </span>
-            <Button variant="outline" onClick={saveChanges} disabled={saving || planning || running || loadingTeam || !plannedTeam}>
+            <Button variant="outline" onClick={saveChanges} disabled={Boolean(planningError) || saving || planning || running || loadingTeam || !plannedTeam}>
               {saving ? <Loader2 className="animate-spin" /> : <Save />} Save Team
             </Button>
           </div>
@@ -688,10 +737,15 @@ function QuestForgePage() {
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-display text-lg font-bold text-ink">{copy.outputs}</h3>
               <span className="chip-parchment !text-[10px] uppercase tracking-wider">
-                {isMockMode() ? copy.outputsBadge : copy.outputsBadgeLive}
+                {isMockMode() ? copy.outputsBadge : (run?.tasks.some((task) => task.data_source === "NESSIE_FALLBACK" || task.data_source === "NESSIE_MIXED") || run?.portfolio_result?.candidates.some((candidate) => candidate.financial_summary.nessie_provenance === "NESSIE_FALLBACK")) ? "Fixture banking data" : copy.outputsBadgeLive}
               </span>
             </div>
-            {displayReward ? (
+            {run.portfolio_result ? (
+              <div>
+                <h4 className="font-display text-base font-bold text-ink">{run.portfolio_result.purpose === "loan" ? "Vehicle-loan opportunity shortlist" : "Mobility decision priorities"}</h4>
+                <p className="mt-2 text-sm text-ink-soft">{run.portfolio_result.narrative || "No relevant customers need action."}</p>
+              </div>
+            ) : displayReward ? (
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Trophy className="h-4 w-4 text-gold-dim" />

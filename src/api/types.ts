@@ -57,6 +57,8 @@ export interface AgentDefinition {
 }
 
 export interface TeamPolicy {
+  workflow_kind?: string;
+  scope?: string;
   max_llm_calls: number;
   max_llm_cost_usd: number;
   work_style: WorkStyle;
@@ -160,6 +162,20 @@ export interface QuestLogEntry {
   executor: ExecutorType;
 }
 
+export interface PortfolioResult {
+  purpose: string;
+  narrative: string;
+  skipped_customers: { customer_id: string; name: string; reason: string }[];
+  candidates: {
+    customer_id: string;
+    name: string;
+    score: number;
+    reasons: string[];
+    recommended_action?: string | null;
+    financial_summary: { financial_stress?: string; safe_mobility_budget?: number; emergency_runway_months?: number; nessie_provenance?: string };
+  }[];
+}
+
 export interface Run {
   run_id: string;
   status: RunStatus;
@@ -171,6 +187,7 @@ export interface Run {
   reward: QuestReward | null;
   log: QuestLogEntry[];
   recommendation?: ToyotaRecommendation | null;
+  portfolio_result?: PortfolioResult | null;
   financial_context?: FinancialContext | null;
   evaluators?: EvaluatorResult[];
 }
@@ -276,6 +293,7 @@ export interface BackendRun {
   tasks?: Partial<RunTask>[];
   metrics?: Partial<RunMetrics>;
   recommendation?: ToyotaRecommendation | null;
+  portfolio_result?: PortfolioResult | null;
   audit_events?: AuditEvent[];
   financial_context?: FinancialContext | null;
   outputs?: unknown[];

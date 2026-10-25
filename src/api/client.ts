@@ -231,6 +231,7 @@ export function normalizeRun(raw: BackendRun): Run {
     reward,
     log,
     recommendation: recommendation ?? null,
+    portfolio_result: raw.portfolio_result ?? null,
     financial_context: raw.financial_context ?? recommendation?.financial_context ?? null,
     evaluators: raw.evaluators ?? recommendation?.evaluators ?? [],
   };
@@ -297,6 +298,9 @@ export async function planTeam(
   });
   if (res.fallback_used === true) {
     throw new ApiRequestError("Planner returned a fallback team.");
+  }
+  if ((res as { execution_status?: string }).execution_status === "NEEDS_SETUP" || !res.team) {
+    throw new ApiRequestError("NEEDS_SETUP: This responsibility requires capabilities that are not connected. The runnable demo supports one Toyota customer's mobility decision.");
   }
   return {
     ...res,
