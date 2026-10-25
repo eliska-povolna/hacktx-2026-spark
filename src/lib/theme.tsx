@@ -597,10 +597,14 @@ export function getSampleAgentsForTheme(theme: AppTheme, agents: AgentDefinition
 }
 
 // Generated/saved configurations are authoritative; styling never changes them.
+// Portraits follow the agent's function (finance → Maya, review → Odo, …) so
+// the same kind of agent keeps the same face in every theme; unclassifiable
+// agents keep stable identity hashing.
 export function getAgentsForTheme(theme: AppTheme, agents: AgentDefinition[]): AgentDefinition[] {
+  const usedKeys = new Set<string>();
   return agents.map((agent) => ({
     ...agent,
-    portrait: getPortrait(theme, agent.id, agent.name),
+    portrait: getFunctionPortrait(theme, agent, usedKeys),
   }));
 }
 
