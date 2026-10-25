@@ -29,7 +29,7 @@ export const Route = createFileRoute("/")({
 });
 
 function LoginPage() {
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, continueAsDemo, isAuthenticated, isLoading } = useAuth();
   const { theme } = useTheme();
   const copy = THEME_COPY[theme];
   const navigate = useNavigate();
@@ -148,6 +148,26 @@ function LoginPage() {
             {pending ? copy.auth.signInPending : copy.auth.signInButton}
           </button>
         </form>
+
+        <div className="my-4 flex items-center gap-3">
+          <hr className="divider-gold flex-1" />
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">or</span>
+          <hr className="divider-gold flex-1" />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            continueAsDemo();
+            navigate({ to: "/create" });
+          }}
+          className="chip-parchment w-full px-4 py-2.5 text-sm font-semibold"
+        >
+          {copy.auth.demoButton}
+        </button>
+        <p className="mt-2 text-center text-[11px] italic text-ink-soft">
+          No account needed — explore the full app as a guest.
+        </p>
 
         <hr className="divider-gold my-5" />
 
