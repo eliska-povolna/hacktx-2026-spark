@@ -316,15 +316,83 @@ export const THEME_OPTIONS: { value: AppTheme; label: string }[] = [
   { value: "toyota", label: "● Toyota" },
 ];
 
-// ---- Toyota demo content (presentation-only mock overlay) ----
+// ---- Theme presentation overlays for agents (presentation only) ----
+// Same underlying agent IDs and architecture — only the displayed role,
+// skills, tools and data scopes change. Applied in getAgentsForTheme and
+// skipped for agents the user explicitly customized.
 
-const TOYOTA_ROLES: Record<string, { role: string; skills: string[] }> = {
-  maya: { role: "Financial Context Analyst", skills: ["Affordability", "Cash Flow", "Forecasting", "Risk Assessment"] },
-  rowan: { role: "Customer Context Analyst", skills: ["Usage Analysis", "Data Gathering", "Research", "Summarize"] },
-  brann: { role: "Vehicle & Mobility Analyst", skills: ["Vehicle Fit", "Usage Analysis", "Optimization", "Pattern Recognition"] },
-  selene: { role: "Decision Specialist", skills: ["Trade-offs", "Recommendation", "Modeling", "Strategy"] },
-  odo: { role: "Policy & Quality Reviewer", skills: ["Policy", "Validation", "Safety", "Quality"] },
+interface ThemeAgentPresentation {
+  role?: string;
+  skills?: string[];
+  tools?: string[];
+  scopes?: string[];
+}
+
+const PRO_PRESENTATION: Record<string, ThemeAgentPresentation> = {
+  maya: {
+    tools: ["Financial Data Reader", "Document Search", "Trend Analysis", "Cost Calculator", "Report Builder"],
+    scopes: ["customer_feedback", "financial_data", "competitor_notes", "policies"],
+  },
+  rowan: {
+    role: "Research Analyst",
+    tools: ["Web Search", "Document Search", "External Research"],
+    scopes: ["customer_feedback", "competitor_notes"],
+  },
+  brann: {
+    tools: ["Process Mapper", "Cost Calculator", "Pattern Lens"],
+    scopes: ["financial_data", "policies"],
+  },
+  selene: {
+    role: "Decision Analyst",
+    tools: ["Decision Model", "Trend Analysis", "Report Builder"],
+    scopes: ["financial_summary", "competitor_notes"],
+  },
+  odo: {
+    tools: ["Policy Reference", "Validation Checks"],
+    scopes: ["policies", "financial_summary"],
+  },
 };
+
+// Toyota specialists: realistic tools and least-privilege data scopes.
+// Downstream agents see derived context only — never raw financial
+// transactions (Decision Specialist gets financial_context summaries,
+// the Reviewer gets derived_financial_context).
+const TOYOTA_PRESENTATION: Record<string, ThemeAgentPresentation> = {
+  maya: {
+    role: "Financial Context Analyst",
+    skills: ["Affordability", "Cash Flow", "Forecasting", "Risk Assessment"],
+    tools: ["Capital One Nessie", "Financial Calculator", "Financial Context Builder"],
+    scopes: ["financial_context", "approved_financial_data"],
+  },
+  rowan: {
+    role: "Customer Context Analyst",
+    skills: ["Usage Analysis", "Data Gathering", "Research", "Summarize"],
+    tools: ["Customer Profile", "Usage Data"],
+    scopes: ["customer_profile", "usage_data"],
+  },
+  brann: {
+    role: "Vehicle & Mobility Analyst",
+    skills: ["Vehicle Fit", "Usage Analysis", "Optimization", "Pattern Recognition"],
+    tools: ["Toyota Vehicle Data", "Contract Data"],
+    scopes: ["vehicle_data", "contract_data", "usage_data"],
+  },
+  selene: {
+    role: "Decision Specialist",
+    skills: ["Trade-offs", "Recommendation", "Modeling", "Strategy"],
+    tools: ["Decision Model", "Recommendation Builder"],
+    scopes: ["financial_context", "vehicle_summary", "customer_context"],
+  },
+  odo: {
+    role: "Policy & Quality Reviewer",
+    skills: ["Policy", "Validation", "Safety", "Quality"],
+    tools: ["Policy Validator", "Safety Checks"],
+    scopes: ["policy_data", "derived_financial_context"],
+  },
+};
+
+const TOYOTA_ROLES: Record<string, { role: string; skills: string[] }> = Object.fromEntries(
+  Object.entries(TOYOTA_PRESENTATION).map(([id, p]) => [id, { role: p.role ?? "", skills: p.skills ?? [] }]),
+);
 
 export const TOYOTA_AGENTS: AgentDefinition[] = MOCK_AGENTS.map((agent) => {
   const override = TOYOTA_ROLES[agent.id];
