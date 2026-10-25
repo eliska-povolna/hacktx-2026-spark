@@ -27,8 +27,10 @@ export const Route = createFileRoute("/_authenticated/settings")({
 const STATUS_LABEL: Record<Integration["status"], string> = {
   CONNECTED: "Connected",
   HOSTED: "Hosted",
-  AWAITING_BACKEND: "Awaiting backend",
-  AWAITING_DEPLOYMENT: "Awaiting deployment",
+  AWAITING_BACKEND: "Unavailable",
+  AWAITING_DEPLOYMENT: "Unavailable",
+  UNCONFIGURED: "Unconfigured",
+  ERROR: "Error — unavailable",
 };
 
 function SettingsPage() {
@@ -36,9 +38,11 @@ function SettingsPage() {
   const { theme } = useTheme();
   const copy = THEME_COPY[theme];
   const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    getIntegrations().then(setIntegrations).catch(() => toast.error("Could not load integrations."));
+    getIntegrations().then(setIntegrations).catch(() => { setError(true); toast.error("Could not load integrations."); }).finally(() => setLoading(false));
   }, []);
 
   return (
@@ -72,6 +76,9 @@ function SettingsPage() {
         <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-ink">
           <Cable className="h-5 w-5 text-gold-dim" /> Integrations
         </h2>
+        {loading && <p role="status" className="text-ink-soft">Loading integrations...</p>}
+        {error && <p role="alert" className="text-destructive">Integrations are unavailable. Please try again later.</p>}
+        {!loading && !error && integrations.length === 0 && <p className="text-ink-soft">No integrations configured.</p>}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {integrations.map((integration) => (
             <div key={integration.id} className="parchment-inset p-4">
@@ -84,7 +91,7 @@ function SettingsPage() {
                     : "text-crimson",
                 )}
               >
-                {STATUS_LABEL[integration.status]}
+                {STATUS_LABEL[integration.status] ?? "Unavailable"}
               </div>
             </div>
           ))}

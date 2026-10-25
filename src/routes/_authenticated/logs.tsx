@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
-import { getLogEvents } from "@/api/client";
+import { getLogEvents, isMockMode } from "@/api/client";
+import { Button } from "@/components/ui/button";
+import { formatDate } from "@/lib/result-format";
 import type { LogEvent } from "@/api/types";
 import { adaptMockText, THEME_COPY, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -39,9 +41,11 @@ function LogsPage() {
   const copy = THEME_COPY[theme];
   const [events, setEvents] = useState<LogEvent[]>([]);
   const [filter, setFilter] = useState<Filter>("All");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    getLogEvents().then(setEvents).catch(() => toast.error("Could not load the activity log."));
+    getLogEvents().then(setEvents).catch(() => { setError(true); toast.error("Could not load the activity log."); }).finally(() => setLoading(false));
   }, []);
 
   const visible = useMemo(() => {
@@ -57,7 +61,7 @@ function LogsPage() {
 
       <div className="mt-5 flex flex-wrap gap-2">
         {FILTERS.map((f) => (
-          <button
+          <Button variant="ghost" aria-pressed={filter === f}
             key={f}
             onClick={() => setFilter(f)}
             className={cn(
@@ -68,17 +72,19 @@ function LogsPage() {
             )}
           >
             {f}
-          </button>
+          </Button>
         ))}
       </div>
 
       <div className="parchment-panel mt-4 p-4 sm:p-5">
+        {loading && <p role="status" className="text-ink-soft">Loading activity...</p>}
+        {error && <p role="alert" className="text-destructive">Live activity is unavailable. Please try again later.</p>}
         <ul className="space-y-2.5">
           {visible.map((event) => (
             <li key={event.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               <BookOpen className="h-4 w-4 shrink-0 text-gold-dim" />
               <span className="shrink-0 font-mono text-[11px] text-ink-soft sm:w-36">
-                {event.timestamp}
+                {isMockMode() ? event.timestamp : formatDate(event.timestamp, true)}
               </span>
               <span
                 className={cn(
@@ -89,12 +95,13 @@ function LogsPage() {
                 {event.category}
               </span>
               <span className="w-full min-w-0 text-ink sm:w-auto sm:flex-1">
-                {adaptMockText(theme, event.message)}
-                <span className="ml-1.5 text-xs italic text-ink-soft">— {adaptMockText(theme, event.actor)}</span>
+                {isMockMode() ? adaptMockText(theme, event.message) : event.message}
+                <span className="ml-1.5 text-xs italic text-ink-soft">— {isMockMode() ? adaptMockText(theme, event.actor) : event.actor}</span>
+                {event.event_type && <span className="mt-1 block break-all text-[10px] text-ink-soft">{event.event_type}{event.run_id ? ` · ${event.run_id}` : ""}</span>}
               </span>
             </li>
           ))}
-          {visible.length === 0 && (
+          {!loading && !error && visible.length === 0 && (
             <li className="py-6 text-center text-sm italic text-ink-soft">
               {copy.logsEmpty}
             </li>
