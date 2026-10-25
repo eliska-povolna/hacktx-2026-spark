@@ -1,0 +1,44 @@
+name: Deploy frontend
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Deploy to Vultr over SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VULTR_SSH_KEY }}
+          VULTR_HOST: ${{ secrets.VULTR_HOST }}
+          VULTR_USER: ${{ secrets.VULTR_USER }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$VULTR_HOST" >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+            "$VULTR_USER@$VULTR_HOST" 'bash -s' <<'EOF'
+          set -euo pipefail
+          cd /opt/questmaster/hacktx-2026-spark
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
+          bun install
+          VITE_USE_MOCK_API=false \
+            VITE_API_BASE_URL=https://questmaster.tech/api \
+            NITRO_PRESET=node_server \
+            bun run build
+          sudo systemctl restart questmaster-frontend
+          curl -f http://127.0.0.1:3000
+          EOF
