@@ -216,19 +216,47 @@ export function normalizeRun(raw: BackendRun): Run {
   const outputs = (Array.isArray(raw.outputs) ? raw.outputs : [])
     .map((item, index) => {
       const row = (item ?? {}) as Record<string, unknown>;
+      const title = String(row.title ?? "Output");
+      const summary = String(row.summary ?? "").trim();
+      const content = String(row.content ?? "").trim();
+      const body = content || summary || `${title} completed.`;
       return {
         id: String(row.id ?? `out-${index}`),
-        title: String(row.title ?? "Output"),
+        title,
         agent_id: row.agent_id != null ? String(row.agent_id) : null,
         type: String(row.type ?? "OUTPUT"),
-        summary: String(row.summary ?? ""),
-        content: String(row.content ?? ""),
+        summary: summary || body.slice(0, 160),
+        content: body,
         timestamp: row.timestamp != null ? String(row.timestamp) : undefined,
         cost_usd: typeof row.cost_usd === "number" ? row.cost_usd : undefined,
         source_type: row.source_type != null ? String(row.source_type) : undefined,
       };
-    })
-    .filter((item) => item.content || item.summary);
+    });
+
+  // Completed runs without a Toyota recommendation still need visible output text.
+  if (outputs.length === 0) {
+    const taskLines = tasks
+      .map((task) => task.activity_summary?.trim())
+      .filter((line): line is string => Boolean(line));
+    const fallback =
+      taskLines.join("\n") ||
+      (raw.status && String(raw.status) !== "PLANNING" && String(raw.status) !== "RUNNING"
+        ? `Run ${String(raw.status).toLowerCase().replaceAll("_", " ")}.`
+        : "");
+    if (fallback) {
+      outputs.push({
+        id: `out-fallback-${raw.run_id}`,
+        title: tasks[0]?.name || "Run result",
+        agent_id: tasks[0]?.assigned_agent_id ?? null,
+        type: "OUTPUT",
+        summary: fallback.slice(0, 160),
+        content: fallback,
+        timestamp: undefined,
+        cost_usd: undefined,
+        source_type: tasks[0]?.executor ?? "LLM",
+      });
+    }
+  }
 
   const reward: QuestReward | null = recommendation
     ? {

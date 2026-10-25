@@ -857,7 +857,9 @@ function QuestForgePage() {
             ) : (
               <p className="flex items-center gap-2 text-sm italic text-ink-soft">
                 {!TERMINAL_STATUSES.has(run.status) && <Loader2 className="h-4 w-4 animate-spin" />}
-                {TERMINAL_STATUSES.has(run.status) ? "No recommendation is available for this run." : `The team is still working... (${run.status.toLowerCase().replaceAll("_", " ")})`}
+                {TERMINAL_STATUSES.has(run.status)
+                  ? "This run finished without output text. Try running the team again."
+                  : `The team is still working... (${run.status.toLowerCase().replaceAll("_", " ")})`}
               </p>
             )}
           </section>

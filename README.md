@@ -1,28 +1,56 @@
 # QuestMaster
 
-HackTX 2026 agent responsibility and execution-routing prototype.
+HackTX 2026 frontend for a cost-aware agent-team prototype.
 
 **Live demo:** https://questmaster.tech
 
-Agents define responsibility; the platform chooses **CODE**, **TOOL**, or **LLM** execution. Teams expose tools, permissions, guardrails and budgets, while runs show decision traces and cost/efficiency metrics.
+Agents declare **responsibility**; the platform routes each step to **CODE**, **TOOL**, or **LLM**. The UI lets you assemble a team, enable context sources, run it, and reopen results. This repo is frontend-only — the FastAPI backend and connectors live elsewhere (see `docs/`).
 
-## Toyota mobility demo
+## Try the live demo
 
-Use **Launch Toyota Mobility Demo** on the sign-in page, assemble a team, select Sarah Miller or Jordan Lee, and run it.
+1. Open https://questmaster.tech
+2. Pick a guest path:
+   - **Launch Toyota Mobility Demo** — switches the interface to Toyota and opens Create
+   - **Continue with Demo** / fantasy guest — keeps the current style (Fantasy by default)
+3. On Create, use the sample goal or write your own, then **Assemble** / **Build Decision Team**
+4. Toggle context chips (**On** / **Off**) as needed, then **Run Team**
+5. Reopen finished runs from **Reports** / **Chronicles** / **Insights** via **Open**
 
-**Same vehicle. Different financial reality. Different recommendation.** Capital One Nessie live banking integration provides financial context; synthetic vehicle and financing assumptions support the hackathon scenario. Recommendations are guidance, not executed finance applications or contract transactions.
+Guest auth is browser-local for the hackathon — not production identity. Guest sessions last for the tab.
 
-Fantasy is the default brand experience. Professional and Toyota are alternative presentation modes; switching styles preserves generated team configuration and results. Generic **Continue with Demo** does not change the selected style.
+## What each style is for
 
-## Services and prototype boundaries
+| Style | Default sample | Connectors to run |
+| --- | --- | --- |
+| **Fantasy** (default) | Connector-free `simple_play` (e.g. rock-paper-scissors) | None required |
+| **Professional** / **Toyota** | Mobility decision sample | **Toyota customer context** on; **Nessie banking** on for financial / portfolio shortlists |
 
-The external API reports integrations with **Capital One Nessie**, **Tiger Data**, and **Vultr**. The public demo uses a **.tech** domain. This repository contains only the frontend; backend implementation is owned separately (see `docs/`). Integration status is read from the API, not a guarantee of service health.
+Style only changes portraits and labels. Generated roles, tools, scopes, and run payloads stay the same when you switch themes.
 
-Authentication is browser-local demo authentication, not production identity. Guest sessions last for the tab session. Live saved teams require the external persistence endpoints; failures are shown explicitly, never replaced with fake account data. Global Activity requires `/api/audit-events`; historical reports depend on the fields supplied by `/api/runs`.
+Toyota story in one line: **same vehicle, different financial reality, different recommendation** — synthetic Toyota profile/vehicle/lease/usage plus Capital One Nessie-derived financial context. Recommendations are guidance only; nothing submits a loan, lease, or transaction.
+
+Demo customers include Sarah Miller, Jordan Lee, Alex Kim (no-action), and loan/portfolio candidates such as Priya Shah. Pick a customer after assemble when the team is single-customer mobility (not portfolio).
+
+## Context chips and Run Team
+
+- **Fantasy** starts with Toyota/Nessie chips **Off** so freeform / `simple_play` goals can run without connectors.
+- **Toyota** / **Professional** auto-enable installed demo sources; chips show **On** / **Off** — clicking an **On** chip turns it off.
+- Mobility teams need **Toyota customer context** enabled to run. Portfolio shortlists also need **Nessie banking**.
+- If Run cannot start, the button still responds with a toast explaining what to turn on.
+
+## Services (from the live API)
+
+Integration status is whatever `GET /api/integrations` returns (typically Capital One Nessie, Tiger Data, Vultr, and the LLM provider). That list is status reporting, not a health SLA.
+
+- Saved teams: Tiger-backed `GET` / `POST` / `DELETE` `/teams` (no fake browser persistence on failure)
+- Activity: `/api/audit-events`
+- Reports: `/api/runs` list + `/api/runs/{id}` detail (Open loads the full run)
+
+All frontend API access goes through `src/api/client.ts`.
 
 ## Run locally
 
-With Bun installed:
+Requires [Bun](https://bun.sh):
 
 ```sh
 bun install
@@ -30,7 +58,14 @@ cp .env.example .env
 bun run dev
 ```
 
-Production uses `VITE_USE_MOCK_API=false` and `VITE_API_BASE_URL=https://questmaster.tech/api`. Use `VITE_USE_MOCK_API=true` only for explicit local mock mode. Mock teams are session-only fixtures, not database persistence. The external API must allow your frontend origin through CORS.
+`.env.example` defaults to the live API:
+
+```env
+VITE_USE_MOCK_API=false
+VITE_API_BASE_URL=https://questmaster.tech/api
+```
+
+Set `VITE_USE_MOCK_API=true` only for explicit local mock fixtures (session-only; not a substitute for saved teams). Your origin must be allowed by the API’s CORS policy.
 
 ```sh
 bun run test
@@ -38,4 +73,4 @@ bun run lint
 bun run build
 ```
 
-Built with React 19, TanStack Start and Tailwind CSS. Product and API documentation lives in `docs/`.
+Stack: React 19, TanStack Start, Tailwind CSS. Product / API specs and demo scenarios: `docs/`.
