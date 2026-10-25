@@ -50,6 +50,39 @@ describe("Agent identities across interface styles", () => {
     }
   });
 
+  it("classifies agents by function so the same role always gets the same portrait", () => {
+    expect(classifyAgentFunction({ role: "Financial Context Analyst" })).toBe("maya");
+    expect(classifyAgentFunction({ role: "Policy & Quality Reviewer" })).toBe("odo");
+    expect(classifyAgentFunction({ role: "Research Analyst", skills: ["Web Search"] })).toBe("rowan");
+    expect(classifyAgentFunction({ role: "Decision Specialist" })).toBe("selene");
+    expect(classifyAgentFunction({ role: "Chaos Wizard" })).toBeNull();
+  });
+
+  it("assigns live-planned agents portraits by function, not by hash", () => {
+    const planned = [
+      { id: "agent_01", name: "Ledger Sage", role: "Financial Analyst", skills: ["Budgeting"] },
+      { id: "agent_02", name: "Compliance Warden", role: "Policy Reviewer", skills: ["Validation"] },
+      { id: "agent_03", name: "Pathfinder", role: "Researcher", skills: ["Web Research"] },
+    ];
+    for (const theme of ["fantasy", "professional", "toyota"] as const) {
+      const agents = normalizeAgents(planned, theme);
+      expect(agents[0]?.portrait).toBe(getPortrait(theme, "maya"));
+      expect(agents[1]?.portrait).toBe(getPortrait(theme, "odo"));
+      expect(agents[2]?.portrait).toBe(getPortrait(theme, "rowan"));
+    }
+  });
+
+  it("keeps portraits distinct when two agents share one function", () => {
+    const planned = [
+      { id: "agent_01", name: "Budget Keeper", role: "Financial Analyst" },
+      { id: "agent_02", name: "Cost Watcher", role: "Finance Reviewer" },
+    ];
+    const agents = normalizeAgents(planned, "fantasy");
+    expect(agents[0]?.portrait).toBe(getPortrait("fantasy", "maya"));
+    expect(agents[1]?.portrait).toBeTruthy();
+    expect(agents[1]?.portrait).not.toBe(agents[0]?.portrait);
+  });
+
   it("preserves custom agents, edits and removals when presenting Toyota", () => {
     const custom = { ...createCustomAgent(MOCK_AGENTS), name: "Edited Amara", skills: ["Custom research"] };
     const team = [...MOCK_AGENTS.filter((agent) => agent.id !== "odo"), custom];
