@@ -823,6 +823,25 @@ function QuestForgePage() {
                   ))}
                 </ul>
               </div>
+            ) : run.outputs && run.outputs.length > 0 ? (
+              <div className="space-y-3">
+                {run.outputs.map((output) => (
+                  <div key={output.id}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Trophy className="h-4 w-4 text-gold-dim" />
+                      <h4 className="font-display text-base font-bold text-ink">{output.title}</h4>
+                    </div>
+                    {output.summary && (
+                      <p className="mt-2 text-sm leading-relaxed text-ink-soft">{output.summary}</p>
+                    )}
+                    {output.content && output.content !== output.summary && (
+                      <pre className="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap break-words font-sans text-sm text-ink">
+                        {output.content}
+                      </pre>
+                    )}
+                  </div>
+                ))}
+              </div>
             ) : (
               <p className="flex items-center gap-2 text-sm italic text-ink-soft">
                 {!TERMINAL_STATUSES.has(run.status) && <Loader2 className="h-4 w-4 animate-spin" />}

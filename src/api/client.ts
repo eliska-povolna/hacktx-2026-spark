@@ -213,23 +213,6 @@ export function normalizeRun(raw: BackendRun): Run {
   };
 
   const recommendation = raw.recommendation;
-  const reward: QuestReward | null = recommendation
-    ? {
-        id: `rec-${raw.run_id}`,
-        title: recommendation.headline,
-        confidence: recommendation.confidence,
-        summary: recommendation.summary,
-        reasons: recommendation.reasons ?? [],
-      }
-    : null;
-
-  const log: QuestLogEntry[] = (raw.audit_events ?? []).map((event) => ({
-    id: event.id,
-    timestamp: formatLogTimestamp(event.timestamp),
-    message: event.message,
-    executor: event.executor_type ?? "TOOL",
-  }));
-
   const outputs = (Array.isArray(raw.outputs) ? raw.outputs : [])
     .map((item, index) => {
       const row = (item ?? {}) as Record<string, unknown>;
@@ -246,6 +229,33 @@ export function normalizeRun(raw: BackendRun): Run {
       };
     })
     .filter((item) => item.content || item.summary);
+
+  const reward: QuestReward | null = recommendation
+    ? {
+        id: `rec-${raw.run_id}`,
+        title: recommendation.headline,
+        confidence: recommendation.confidence,
+        summary: recommendation.summary,
+        reasons: recommendation.reasons ?? [],
+      }
+    : outputs[0]
+      ? {
+          id: outputs[0].id,
+          title: outputs[0].title,
+          confidence: 1,
+          summary: outputs[0].content || outputs[0].summary,
+          reasons: outputs[0].summary && outputs[0].content && outputs[0].summary !== outputs[0].content
+            ? [outputs[0].summary]
+            : [],
+        }
+      : null;
+
+  const log: QuestLogEntry[] = (raw.audit_events ?? []).map((event) => ({
+    id: event.id,
+    timestamp: formatLogTimestamp(event.timestamp),
+    message: event.message,
+    executor: event.executor_type ?? "TOOL",
+  }));
 
   return {
     run_id: raw.run_id,
