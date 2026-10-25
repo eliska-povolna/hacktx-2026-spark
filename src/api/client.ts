@@ -27,6 +27,7 @@ import {
 } from "./mockData";
 import type {
   AgentDefinition,
+  AuditEvent,
   BackendRun,
   CreateRunInput,
   DemoCustomer,
@@ -148,7 +149,7 @@ export function normalizeRun(raw: BackendRun): Run {
     tool: task.tool ?? null,
     duration_ms: task.duration_ms ?? null,
     cost_usd: task.cost_usd ?? 0,
-    data_source: task.data_source ?? "LOCAL_CODE",
+    data_source: task.data_source ?? "UNKNOWN",
   }));
 
   const metrics: RunMetrics = {
@@ -193,6 +194,9 @@ export function normalizeRun(raw: BackendRun): Run {
     metrics,
     reward,
     log,
+    recommendation: recommendation ?? null,
+    financial_context: raw.financial_context ?? recommendation?.financial_context ?? null,
+    evaluators: raw.evaluators ?? recommendation?.evaluators ?? [],
   };
 }
 
@@ -393,8 +397,30 @@ export async function getRuns(): Promise<RunSummary[]> {
     await mockDelay();
     return MOCK_RUN_HISTORY;
   }
-  const res = await request<{ runs: RunSummary[] }>("/runs");
-  return res.runs;
+  const res = await request<{ runs: Partial<RunSummary>[] }>("/runs");
+  return res.runs.map(normalizeRunSummary);
+}
+
+export function normalizeRunSummary(raw: Partial<RunSummary>): RunSummary {
+  return {
+    run_id: raw.run_id ?? "", goal: raw.goal ?? "", team_name: raw.team_name ?? "",
+    status: raw.status ?? "PLANNING", result: raw.result ?? "", date: raw.date ?? "",
+    duration_ms: finiteNumber(raw.duration_ms), estimated_ai_cost_usd: finiteNumber(raw.estimated_ai_cost_usd),
+    llm_calls: finiteNumber(raw.llm_calls), llm_calls_avoided: finiteNumber(raw.llm_calls_avoided),
+  };
+}
+
+function finiteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+export function normalizeAuditEvent(event: AuditEvent, index = 0): LogEvent {
+  const type = event.event_type ?? "";
+  const category = /permission|security|data.?minimization|access|guardrail/i.test(type)
+    ? "SECURITY" : /run_/i.test(type) ? "QUEST" : event.executor_type ?? "QUEST";
+  return { id: event.id ?? `event-${index}`, timestamp: event.timestamp ?? "", category,
+    message: event.message ?? type, actor: event.agent_name ?? event.agent_id ?? "Platform",
+    event_type: type, run_id: event.run_id };
 }
 
 export async function getIntegrations(): Promise<Integration[]> {
@@ -407,13 +433,12 @@ export async function getIntegrations(): Promise<Integration[]> {
 }
 
 export async function getLogEvents(): Promise<LogEvent[]> {
-  // Frontend-only for now; the real backend exposes audit events per run.
-  await mockDelay();
-  return MOCK_LOG_EVENTS;
+  if (USE_MOCK) { await mockDelay(); return MOCK_LOG_EVENTS; }
+  const res = await request<{ audit_events: AuditEvent[] }>("/audit-events?limit=200");
+  return res.audit_events.map(normalizeAuditEvent);
 }
 
 export async function getSavedParties(): Promise<SavedParty[]> {
-  // Frontend-only for now; parties persist in component state.
-  await mockDelay();
-  return MOCK_PARTIES;
+  if (USE_MOCK) { await mockDelay(); return MOCK_PARTIES; }
+  throw new ApiRequestError("Legacy saved parties are unavailable in live mode. Use saved teams.");
 }
