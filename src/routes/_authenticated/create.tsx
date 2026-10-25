@@ -20,6 +20,7 @@ import { AdventurerCard } from "@/components/AdventurerCard";
 import { CharacterSheet } from "@/components/CharacterSheet";
 import { ConfigureAdventurerDialog } from "@/components/ConfigureAdventurerDialog";
 import { ExecutorBadge } from "@/components/ExecutorBadge";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   createCustomAgent,
   getAgentsForTheme,
@@ -70,6 +71,15 @@ function QuestForgePage() {
   const [customers, setCustomers] = useState<DemoCustomer[]>([]);
   const [customerId, setCustomerId] = useState("customer-stable");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sheetRef = useRef<HTMLElement | null>(null);
+  const isMobile = useIsMobile();
+
+  // On mobile the character sheet sits below the card grid — scroll to it
+  // when an agent is selected so the tap feels like it opens the profile.
+  useEffect(() => {
+    if (!isMobile || !selectedId) return;
+    sheetRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [selectedId, isMobile]);
 
   const selected = agents.find((a) => a.id === selectedId) ?? null;
   const configureAgent = agents.find((a) => a.id === configureId) ?? null;
@@ -305,7 +315,9 @@ function QuestForgePage() {
 
       {/* SECTION 3 — Character sheet */}
       {selected && (
-        <CharacterSheet agent={selected} onConfigure={() => setConfigureId(selected.id)} />
+        <section ref={sheetRef} className="scroll-mt-4">
+          <CharacterSheet agent={selected} onConfigure={() => setConfigureId(selected.id)} />
+        </section>
       )}
 
       {/* SECTIONS 4–6 — Outputs / Cost / Log */}
