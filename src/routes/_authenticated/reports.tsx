@@ -11,10 +11,10 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/reports")({
   head: () => ({
     meta: [
-      { title: "Chronicles — QuestMaster" },
-      { name: "description", content: "Reports and insights from past QuestMaster quest runs." },
-      { property: "og:title", content: "Chronicles — QuestMaster" },
-      { property: "og:description", content: "Reports and insights from past quest runs." },
+      { title: "Reports — QuestMaster" },
+      { name: "description", content: "Reports and insights from past QuestMaster runs." },
+      { property: "og:title", content: "Reports — QuestMaster" },
+      { property: "og:description", content: "Reports and insights from past runs." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -40,8 +40,8 @@ function ReportsPage() {
         <table className="w-full min-w-[760px] text-sm">
           <thead>
             <tr className="border-b border-gold-dim/50 text-left font-display text-xs uppercase tracking-wide text-ink-soft">
-              <th className="px-3 py-2">Quest</th>
-              <th className="px-3 py-2">Party</th>
+              <th className="px-3 py-2">{copy.reportGoalCol}</th>
+              <th className="px-3 py-2">{copy.reportTeamCol}</th>
               <th className="px-3 py-2">Date</th>
               <th className="px-3 py-2">Result</th>
               <th className="px-3 py-2">Duration</th>
@@ -78,6 +78,9 @@ function ReportsPage() {
           </tbody>
         </table>
       </div>
+      <p className="mt-2 text-right text-[11px] italic text-muted-foreground sm:hidden">
+        Swipe to view more →
+      </p>
     </div>
   );
 }

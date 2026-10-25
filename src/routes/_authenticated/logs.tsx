@@ -11,10 +11,10 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/logs")({
   head: () => ({
     meta: [
-      { title: "Quest Log — QuestMaster" },
-      { name: "description", content: "Activity and execution logs across all QuestMaster quests." },
-      { property: "og:title", content: "Quest Log — QuestMaster" },
-      { property: "og:description", content: "Activity and execution logs across all quests." },
+      { title: "Activity — QuestMaster" },
+      { name: "description", content: "Activity and execution logs across all QuestMaster runs." },
+      { property: "og:title", content: "Activity — QuestMaster" },
+      { property: "og:description", content: "Activity and execution logs across all runs." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -75,28 +75,28 @@ function LogsPage() {
       <div className="parchment-panel mt-4 p-4 sm:p-5">
         <ul className="space-y-2.5">
           {visible.map((event) => (
-            <li key={event.id} className="flex items-center gap-3 text-sm">
+            <li key={event.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               <BookOpen className="h-4 w-4 shrink-0 text-gold-dim" />
-              <span className="w-36 shrink-0 font-mono text-[11px] text-ink-soft">
+              <span className="shrink-0 font-mono text-[11px] text-ink-soft sm:w-36">
                 {event.timestamp}
-              </span>
-              <span className="min-w-0 flex-1 text-ink">
-                {event.message}
-                <span className="ml-1.5 text-xs italic text-ink-soft">— {event.actor}</span>
               </span>
               <span
                 className={cn(
-                  "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wider",
+                  "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wider sm:order-last",
                   CATEGORY_STYLES[event.category],
                 )}
               >
                 {event.category}
               </span>
+              <span className="w-full min-w-0 text-ink sm:w-auto sm:flex-1">
+                {event.message}
+                <span className="ml-1.5 text-xs italic text-ink-soft">— {event.actor}</span>
+              </span>
             </li>
           ))}
           {visible.length === 0 && (
             <li className="py-6 text-center text-sm italic text-ink-soft">
-              No entries in this chapter yet.
+              {copy.logsEmpty}
             </li>
           )}
         </ul>
