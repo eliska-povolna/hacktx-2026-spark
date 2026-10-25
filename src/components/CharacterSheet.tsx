@@ -45,7 +45,7 @@ export function CharacterSheet({ agent, onConfigure }: CharacterSheetProps) {
   return (
     <section className="parchment-panel p-5 sm:p-6">
       <div className="flex flex-col gap-5 md:flex-row">
-        <div className="shrink-0">
+        <div className="mx-auto shrink-0 md:mx-0">
           <img
             src={agent.portrait}
             alt={`Portrait of ${agent.name}`}
@@ -70,7 +70,7 @@ export function CharacterSheet({ agent, onConfigure }: CharacterSheetProps) {
               </h3>
               <p className="font-display text-sm font-semibold text-crimson">{agent.role}</p>
             </div>
-            <button onClick={onConfigure} className="btn-crimson px-3 py-1.5 text-xs">
+            <button onClick={onConfigure} className="btn-crimson w-full px-3 py-2 text-xs sm:w-auto sm:py-1.5">
               <Settings2 className="h-3.5 w-3.5" /> {copy.configure}
             </button>
           </div>
