@@ -144,6 +144,7 @@ function QuestForgePage() {
   const toyotaEnabled = enabledSourceIds.includes("toyota_customer");
   const nessieEnabled = enabledSourceIds.includes("nessie_banking");
   const isPortfolio = plannedTeam?.policy?.scope === "portfolio";
+  const isSimplePlay = plannedTeam?.policy?.workflow_kind === "simple_play";
 
   // Sample-goal switching: when the theme changes, replace the quest text
   // ONLY if it is still the previous theme's untouched sample (or empty).
@@ -369,13 +370,13 @@ function QuestForgePage() {
 
   const startRun = async () => {
     if (running || planningError) return;
-    if (!toyotaEnabled) {
+    if (!toyotaEnabled && !isSimplePlay) {
       toast.error(
-        "Enable Toyota customer context to run the mobility decision team, or dismiss it only after you finish planning a non-Toyota goal.",
+        "Enable Toyota customer context to run the mobility decision team, or assemble a simple play team that needs no connectors.",
       );
       return;
     }
-    if (!isPortfolio && (customerError || customers.length === 0)) {
+    if (!isSimplePlay && !isPortfolio && (customerError || customers.length === 0)) {
       toast.error("Customer data is unavailable. Reload before running.");
       return;
     }
@@ -641,9 +642,9 @@ function QuestForgePage() {
                 uploading ||
                 deletingId !== null ||
                 Boolean(planningError) ||
-                !toyotaEnabled ||
+                (!toyotaEnabled && !isSimplePlay) ||
                 (isPortfolio && !nessieEnabled) ||
-                (!isPortfolio && (customerError || customers.length === 0))
+                (!isSimplePlay && !isPortfolio && (customerError || customers.length === 0))
               }
               className="btn-outline-gold w-full px-4 py-2.5 text-sm !text-ink sm:w-auto sm:py-2"
               title={!toyotaEnabled ? "Enable Toyota customer context to run" : undefined}
