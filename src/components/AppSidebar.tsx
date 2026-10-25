@@ -17,6 +17,7 @@ import { useState } from "react";
 import { CrestLogo } from "@/components/CrestLogo";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { Button } from "@/components/ui/button";
+import { isMockMode } from "@/api/client";
 import { useAuth } from "@/lib/auth";
 import { THEME_COPY, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -94,7 +95,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         })}
 
         {/* Saved parties */}
-        <div className="sidebar-saved-parties pt-5">
+        {isMockMode() && <div className="sidebar-saved-parties pt-5">
           <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gold-dim">
             {copy.savedParties}
           </div>
@@ -112,7 +113,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               </Link>
             );
           })}
-        </div>
+        </div>}
       </nav>
 
       {/* Bottom decoration + user */}
