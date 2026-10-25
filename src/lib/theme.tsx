@@ -13,7 +13,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { MOCK_AGENTS, PORTRAITS } from "@/api/mockData";
+import { MOCK_AGENTS } from "@/api/mockData";
 import type { AgentDefinition, QuestReward, RunMetrics } from "@/api/types";
 
 export type AppTheme = "fantasy" | "professional" | "toyota";
