@@ -46,7 +46,7 @@ import type {
   TaskStatus,
 } from "./types";
 import type { PlanningInterface, SavedTeam, SavedTeamSummary, SaveTeamInput } from "./types";
-import { getPortrait, getSampleAgentsForTheme, getThemePortraitByIndex } from "@/lib/theme";
+import { getFunctionPortrait, getPortrait, getSampleAgentsForTheme, getThemePortraitByIndex } from "@/lib/theme";
 
 const USE_MOCK = (import.meta.env["VITE_USE_MOCK_API"] ?? "false") === "true";
 const API_BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "https://questmaster.tech/api";
