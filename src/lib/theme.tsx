@@ -106,6 +106,7 @@ export const DEMO_AUTH_NOTE = "Demo sign-in — accounts are stored only in this
 export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
   fantasy: {
     brandName: "QuestMaster",
+    brandShort: "QuestMaster",
     nav: {
       create: "Quest Forge",
       createSub: "Create new quests",
@@ -119,6 +120,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
       settingsSub: "Settings & integrations",
     },
     savedParties: "Saved Parties",
+    savedTeamNames: ["Merchant Insight Party", "Support Guild", "Market Watchers"],
     goalTitle: "What quest do you seek?",
     buildButton: "Assemble My Party",
     teamTitle: "Meet Your Adventurers",
@@ -129,6 +131,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
     removeAgent: "Remove adventurer",
     outputs: "Quest Rewards",
     outputsBadge: "Mock Output",
+    outputsBadgeLive: "Live Result",
     cost: "Mana & Cost",
     log: "Quest Log",
     ready: "Ready",
@@ -138,6 +141,26 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
     contextChips: ["Guest Feedback", "Ledger Data", "Competitor Notes", "Guild Policies"],
     brandTagline: "The best agent platform\nknows when not to use an agent.",
     quote: "“Good questions lead to greater journeys.”",
+    auth: {
+      signInTitle: "Welcome back, Quest Master",
+      signInSub: "Your party awaits.",
+      signInButton: "Enter the Guild",
+      signInPending: "Opening the gates...",
+      signUpTitle: "Create Your Chronicle",
+      signUpSub: "Every legend begins with a first page.",
+      signUpButton: "Create Your Chronicle",
+      signUpPending: "Inscribing your name...",
+      resetTitle: "Recover Your Seal",
+      resetSub: "Set a new password for your guild account.",
+    },
+    toastPlanError: "The guild archives could not be reached.",
+    toastAgentRemoved: (name) => `${name} has been dismissed from the party.`,
+    toastTeamRemoved: (name) => `${name} disbanded.`,
+    openTeam: "Open Party",
+    openTeamHint: "Opening parties in the Forge arrives with the backend.",
+    reportGoalCol: "Quest",
+    reportTeamCol: "Party",
+    logsEmpty: "No entries in this chapter yet.",
     pages: {
       teamsTitle: "Adventuring Parties",
       teamsSub: "Your saved bands of adventurers, ready for the next quest.",
@@ -151,6 +174,7 @@ export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
   },
   professional: {
     brandName: "QuestMaster",
+    brandShort: "QuestMaster",
     nav: {
       create: "Create",
       createSub: "Start a new analysis",
