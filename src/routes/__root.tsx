@@ -13,7 +13,7 @@ import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { AuthProvider } from "../lib/auth";
-import { ThemeProvider } from "../lib/theme";
+import { ThemeProvider } from "../lib/theme-context";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {

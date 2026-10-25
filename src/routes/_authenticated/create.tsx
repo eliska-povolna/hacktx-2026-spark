@@ -20,10 +20,9 @@ import { AdventurerCard } from "@/components/AdventurerCard";
 import { CharacterSheet } from "@/components/CharacterSheet";
 import { ConfigureAdventurerDialog } from "@/components/ConfigureAdventurerDialog";
 import { ExecutorBadge } from "@/components/ExecutorBadge";
-import { PORTRAITS } from "@/api/mockData";
 import {
+  createCustomAgent,
   getAgentsForTheme,
-  getPortrait,
   THEME_COPY,
   TOYOTA_METRICS,
   TOYOTA_REWARD,
@@ -60,7 +59,8 @@ function QuestForgePage() {
   const { theme } = useTheme();
   const copy = THEME_COPY[theme];
   const [quest, setQuest] = useState(copy.sampleQuest);
-  const [agents, setAgents] = useState<AgentDefinition[]>([]);
+  const [baseAgents, setAgents] = useState<AgentDefinition[]>([]);
+  const agents = getAgentsForTheme(theme, baseAgents);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [planning, setPlanning] = useState(false);
   const [configureId, setConfigureId] = useState<string | null>(null);
@@ -75,7 +75,6 @@ function QuestForgePage() {
   // the theme (Toyota shows its mobility decision sample).
   useEffect(() => {
     setQuest(THEME_COPY[theme].sampleQuest);
-    setAgents((prev) => getAgentsForTheme(theme, prev));
   }, [theme]);
 
   useEffect(() => {
@@ -94,7 +93,7 @@ function QuestForgePage() {
     try {
       const res = await planTeam(quest);
       const themedAgents = getAgentsForTheme(theme, res.team.agents);
-      setAgents(themedAgents);
+      setAgents(res.team.agents);
       setSelectedId(themedAgents[0]?.id ?? null);
       toast.success("Your team has assembled.");
     } catch {
@@ -140,7 +139,13 @@ function QuestForgePage() {
   };
 
   const saveAgent = (updated: AgentDefinition) => {
-    setAgents((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+    const displayed = agents.find((agent) => agent.id === updated.id);
+    setAgents((prev) => prev.map((a) => a.id !== updated.id ? a : {
+      ...updated,
+      portrait: a.portrait,
+      role: updated.role === displayed?.role ? a.role : updated.role,
+      skills: updated.skills === displayed?.skills ? a.skills : updated.skills,
+    }));
     toast.success(`${updated.name} has been reconfigured.`);
   };
 
@@ -151,23 +156,7 @@ function QuestForgePage() {
   };
 
   const addCustomAgent = () => {
-    const n = agents.length + 1;
-    const custom: AgentDefinition = {
-      id: `custom-${Date.now()}`,
-      name: `Agent ${n}`,
-      role: "Custom Specialist",
-      purpose: "A custom agent shaped by your goal.",
-      description: "A custom agent. Configure their role, skills, and guardrails.",
-      skills: ["Custom"],
-      instructions: "",
-      allowed_tools: ["Scroll Archive"],
-      permissions: { data_scopes: ["guest_feedback"], actions: ["read"] },
-      guardrails: ["Stay within budget limits"],
-      model_policy: "Use LLM for reasoning. Prefer tools and code first.",
-      budget: { max_llm_cost_usd: 0.5, max_llm_calls: 2 },
-      estimated_cost_usd: 0.05,
-      portrait: getPortrait(theme, Object.keys(PORTRAITS)[n % 5] ?? "maya"),
-    };
+    const custom = createCustomAgent(baseAgents);
     setAgents((prev) => [...prev, custom]);
     setSelectedId(custom.id);
     setConfigureId(custom.id);
@@ -194,7 +183,7 @@ function QuestForgePage() {
         />
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {copy.contextChips.map((label, i) => {
-            const ChipIcon = CHIP_ICONS[i % CHIP_ICONS.length]!;
+            const ChipIcon = CHIP_ICONS[i % CHIP_ICONS.length] ?? FileText;
             return (
               <span key={label} className="chip-parchment">
                 <ChipIcon className="h-3 w-3" /> {label}
