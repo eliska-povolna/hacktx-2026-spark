@@ -563,11 +563,12 @@ export function assignFunctionIdentities<T extends AgentFunctionSource & { id: s
   agents.forEach((a, i) => { keys[i] ??= classifyAgentFunction(a, "full"); });
   const used = new Set<string>();
   return agents.map((agent, i) => {
-    let key = keys[i] ?? null;
-    if (key && used.has(key)) key = null;
-    if (!key) key = resolveFunctionKey(agent, used);
-    used.add(key);
-    return { key, portrait: getPortrait(theme, key) };
+    const classified = keys[i] ?? null;
+    const resolved: string = classified && !used.has(classified)
+      ? classified
+      : resolveFunctionKey(agent, used);
+    used.add(resolved);
+    return { key: resolved, portrait: getPortrait(theme, resolved) };
   });
 }
 
