@@ -31,6 +31,8 @@ import toyotaKenji from "@/assets/toyota-kenji.jpg";
 
 export interface ThemeCopy {
   brandName: string;
+  /** Shorter label for the mobile top bar. */
+  brandShort: string;
   nav: {
     create: string;
     createSub: string;
@@ -44,6 +46,8 @@ export interface ThemeCopy {
     settingsSub: string;
   };
   savedParties: string;
+  /** Neutral saved-team examples shown in the sidebar. */
+  savedTeamNames: string[];
   goalTitle: string;
   buildButton: string;
   teamTitle: string;
@@ -54,6 +58,8 @@ export interface ThemeCopy {
   removeAgent: string;
   outputs: string;
   outputsBadge: string;
+  /** Badge shown on the outputs panel when the live backend produced it. */
+  outputsBadgeLive: string;
   cost: string;
   log: string;
   ready: string;
@@ -62,6 +68,26 @@ export interface ThemeCopy {
   contextChips: string[];
   brandTagline: string;
   quote: string;
+  auth: {
+    signInTitle: string;
+    signInSub: string;
+    signInButton: string;
+    signInPending: string;
+    signUpTitle: string;
+    signUpSub: string;
+    signUpButton: string;
+    signUpPending: string;
+    resetTitle: string;
+    resetSub: string;
+  };
+  toastPlanError: string;
+  toastAgentRemoved: (name: string) => string;
+  toastTeamRemoved: (name: string) => string;
+  openTeam: string;
+  openTeamHint: string;
+  reportGoalCol: string;
+  reportTeamCol: string;
+  logsEmpty: string;
   pages: {
     teamsTitle: string;
     teamsSub: string;
@@ -73,6 +99,9 @@ export interface ThemeCopy {
     settingsSub: string;
   };
 }
+
+/** Shown on every auth screen — this build uses demo-only browser auth. */
+export const DEMO_AUTH_NOTE = "Demo sign-in — accounts are stored only in this browser.";
 
 export const THEME_COPY: Record<AppTheme, ThemeCopy> = {
   fantasy: {
