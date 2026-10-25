@@ -36,6 +36,7 @@
 - [x] Live mode is the default and local .env (gitignored) uses the live API.
 
 ## Open
+- [ ] Final production integration pass: separate Toyota entry, live activity/reports/integration states, complete recommendation details and README; verify live and mock paths.
 - [x] Live API polish: identity-stable themed jpg portraits for unfamiliar agents; removed Add Files and misleading backend stubs; HTTP 503 messages and fallback plans rejected; live lunar-beekeeping team verified in all styles, 22 tests passed.
 - [x] Generate from the active interface goal and keep generated configurations identical across styles.
 - [x] Prepare external saved-team CRUD, reopening by teamId, editing and explicit Save Team; no mock fallback in live mode.
