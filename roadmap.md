@@ -33,7 +33,7 @@
 - [x] Demo customers: GET /api/demo/customers + customer selector in Quest Forge
 - [x] createDemoSession stays client-side (backend has no /demo-session)
 - [x] VITE_API_BASE_URL=https://questmaster.tech/api (never raw IP:8000 — Caddy exposes only HTTPS)
-- [x] Live mode is the default; local .env (gitignored) enables mock mode for the preview
+- [x] Live mode is the default and local .env (gitignored) uses the live API.
 
 ## Open
 - [ ] Live API polish: stable themed portraits for unfamiliar agents, remove future-backend stubs, reject failed/fallback plans and verify live UI.

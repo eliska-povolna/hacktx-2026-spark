@@ -76,7 +76,7 @@ function TeamsPage() {
       <h1 className="gold-heading text-3xl font-bold">{copy.pages.teamsTitle}</h1>
       <p className="mt-1 text-sm text-muted-foreground">{copy.pages.teamsSub}</p>
       {loading && <p role="status" className="mt-6 flex gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading teams...</p>}
-      {error && <p role="alert" className="mt-6 text-destructive">Saved teams are unavailable. The team storage service is not connected yet.</p>}
+      {error && <p role="alert" className="mt-6 text-destructive">Saved teams could not be loaded. Please try again later.</p>}
       {!loading && !error && parties.length === 0 && <p className="mt-6 text-muted-foreground">No saved teams yet.</p>}
       {isMockMode() && <p className="mt-2 text-xs text-muted-foreground">Demo teams · this session only</p>}
 
