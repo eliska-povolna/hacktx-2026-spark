@@ -448,6 +448,67 @@ export function getThemePortraitByIndex(theme: AppTheme, index: number): string 
   return getPortrait(theme, key);
 }
 
+// ---- Function-based identity assignment (live-planned agents) ----
+// Live LLM agents arrive with backend names but no portraits. Instead of a
+// random hash, classify each agent by its function (role/skills/purpose/
+// scopes) and give it the matching canonical identity: Maya = finance,
+// Rowan = research, Brann = operations/analysis, Selene = decision/strategy,
+// Odo = review/policy. The same function always gets the same portrait in
+// every theme. Agents whose function does not match keep identity hashing.
+
+type AgentFunctionKey = "maya" | "rowan" | "brann" | "selene" | "odo";
+
+const FUNCTION_KEYWORDS: [RegExp, AgentFunctionKey][] = [
+  [/financ|budget|cost|ledger|account|billing|cash.?flow|affordab/i, "maya"],
+  [/research|gather|web.?search|explor|survey|discover/i, "rowan"],
+  [/analy|optimi|process|pattern|operation|metric|vehicle|usage|data(?!\s*privacy)/i, "brann"],
+  [/decision|recommend|strateg|synthes|model|priorit/i, "selene"],
+  [/review|polic|valid|guard|complian|secur|quality|safety|audit|risk|ethic/i, "odo"],
+];
+
+export function classifyAgentFunction(agent: {
+  role?: string;
+  skills?: string[];
+  purpose?: string;
+  description?: string;
+  permissions?: { data_scopes?: string[] };
+}): AgentFunctionKey | null {
+  const text = [agent.role, agent.purpose, agent.description,
+    ...(agent.skills ?? []), ...(agent.permissions?.data_scopes ?? [])]
+    .filter(Boolean).join(" ");
+  for (const [pattern, key] of FUNCTION_KEYWORDS) {
+    if (pattern.test(text)) return key;
+  }
+  return null;
+}
+
+// Assign canonical portraits by function. When several agents share one
+// function, the first keeps the canonical identity and the rest fall back
+// to unused pool entries so portraits stay distinct within a team.
+export function getFunctionPortrait(
+  theme: AppTheme,
+  agent: Parameters<typeof classifyAgentFunction>[0] & { id: string; name: string },
+  usedKeys: Set<string>,
+): string {
+  const key = classifyAgentFunction(agent);
+  if (key && !usedKeys.has(key)) {
+    usedKeys.add(key);
+    return getPortrait(theme, key);
+  }
+  const fallback = getPortrait(theme, agent.id, agent.name);
+  const fallbackKey = PORTRAIT_KEYS.find((k) => getPortrait(theme, k) === fallback);
+  if (fallbackKey && !usedKeys.has(fallbackKey)) {
+    usedKeys.add(fallbackKey);
+    return fallback;
+  }
+  const free = PORTRAIT_KEYS.find((k) => !usedKeys.has(k));
+  if (free) {
+    usedKeys.add(free);
+    return getPortrait(theme, free);
+  }
+  return fallback;
+}
+
 export function getPortrait(theme: AppTheme, agentId: string, agentName = ""): string {
   const id = agentId.toLowerCase();
   const key = id.startsWith("custom-amara-") ? "amara"
