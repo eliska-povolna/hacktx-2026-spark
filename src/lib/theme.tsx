@@ -467,11 +467,11 @@ const FUNCTION_KEYWORDS: [RegExp, AgentFunctionKey][] = [
 ];
 
 export function classifyAgentFunction(agent: {
-  role?: string;
-  skills?: string[];
-  purpose?: string;
-  description?: string;
-  permissions?: { data_scopes?: string[] };
+  role?: string | undefined;
+  skills?: string[] | undefined;
+  purpose?: string | undefined;
+  description?: string | undefined;
+  permissions?: { data_scopes?: string[] | undefined } | undefined;
 }): AgentFunctionKey | null {
   const text = [agent.role, agent.purpose, agent.description,
     ...(agent.skills ?? []), ...(agent.permissions?.data_scopes ?? [])]
