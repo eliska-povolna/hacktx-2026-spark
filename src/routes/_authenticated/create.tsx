@@ -25,6 +25,7 @@ import { RunDetails } from "@/components/RunDetails";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { computeAvoidedPct, computeTaskSplit } from "@/lib/metrics";
+import { formatMoney } from "@/lib/result-format";
 import {
   createCustomAgent,
   getAgentsForTheme,
@@ -416,7 +417,7 @@ function QuestForgePage() {
             </div>
             {displayReward ? (
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Trophy className="h-4 w-4 text-gold-dim" />
                   <h4 className="font-display text-base font-bold text-ink">{displayReward.title}</h4>
                   <span className="rounded-full bg-forest/15 px-2 py-0.5 text-[11px] font-bold text-forest">
@@ -453,7 +454,7 @@ function QuestForgePage() {
               <div className="parchment-inset p-2">
                 <div className="text-[10px] font-bold uppercase tracking-wide text-ink-soft">AI Cost</div>
                 <div className="font-display text-xl font-bold text-ink">
-                  ${displayMetrics.estimated_ai_cost_usd.toFixed(2)}
+                  {formatMoney(displayMetrics.estimated_ai_cost_usd)}
                 </div>
               </div>
               <div className="parchment-inset p-2">
