@@ -16,6 +16,7 @@ import { useState } from "react";
 
 import { CrestLogo } from "@/components/CrestLogo";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { THEME_COPY, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -55,9 +56,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain">
+    <div className="quest-sidebar flex h-full min-h-0 flex-col overflow-hidden">
       {/* Brand */}
-      <div className="flex shrink-0 items-center gap-3 px-5 pt-6 pb-4">
+      <div className="sidebar-brand flex shrink-0 items-center gap-3 px-5 pt-6 pb-4">
         <CrestLogo className="h-11 w-11 text-gold" />
         <div>
           <div className="font-display text-xl font-bold tracking-wide text-gold-bright">
@@ -72,7 +73,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <hr className="divider-gold mx-4 shrink-0" />
 
       {/* Navigation */}
-      <nav className="mt-3 flex-1 shrink-0 space-y-1 px-3">
+      <nav className="sidebar-navigation mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3" aria-label="Main navigation">
         {navItems.map((item) => {
           const active = currentPath === item.to;
           return (
@@ -81,7 +82,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               to={item.to}
               onClick={onNavigate}
               className={cn(
-                "flex items-center gap-3 rounded-md border px-3 py-2.5 transition-colors",
+                "sidebar-nav-link flex items-center gap-3 rounded-md border px-3 py-2.5 transition-colors",
                 active
                   ? "border-arcane bg-arcane/25 text-foreground shadow-[0_0_16px_oklch(0.6_0.18_260/35%)]"
                   : "border-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
@@ -90,14 +91,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               <item.icon className={cn("h-5 w-5 shrink-0", active ? "text-arcane-bright" : "text-gold-dim")} />
               <span>
                 <span className="block font-display text-sm font-semibold">{item.title}</span>
-                <span className="block text-[11px] text-muted-foreground">{item.subtitle}</span>
+                <span className="sidebar-nav-subtitle block text-[11px] text-muted-foreground">{item.subtitle}</span>
               </span>
             </Link>
           );
         })}
 
         {/* Saved parties */}
-        <div className="pt-5">
+        <div className="sidebar-saved-parties pt-5">
           <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gold-dim">
             {copy.savedParties}
           </div>
@@ -116,8 +117,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       {/* Bottom decoration + user */}
-      <div className="shrink-0 px-5 pb-5">
-        <div className="fantasy-only mb-4 rounded-md border border-gold-dim/40 bg-wood-deep/60 p-3 text-center">
+      <div className="sidebar-footer shrink-0 px-5 pt-3 pb-5">
+        <div className="sidebar-quote fantasy-only mb-4 rounded-md border border-gold-dim/40 bg-wood-deep/60 p-3 text-center">
           <Flame className="mx-auto mb-1 h-4 w-4 text-gold" />
           <p className="font-display text-[11px] italic leading-snug text-gold/80">
             {copy.quote}
@@ -135,13 +136,16 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <div className="truncate text-sm font-semibold">{user?.name ?? "Quest Master"}</div>
             <div className="text-[11px] text-muted-foreground">{user?.title ?? "Quest Master"}</div>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleLogout}
             title="Log out"
+            aria-label="Log out"
             className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-crimson"
           >
             <LogOut className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>
