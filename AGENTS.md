@@ -13,3 +13,6 @@
 
 - Project spec for QuestMaster lives in `docs/` (README, BUILD_PLAN, API_SPEC, DEMO_SCENARIOS); read it before building features. Why: it is the source of truth for the product.
 - This project is frontend only; the backend is built elsewhere per `docs/QuestMaster_API_SPEC.md`. Why: team split — do not add Lovable Cloud or server logic here.
+- Auth is client-side only (localStorage accounts/session in `src/lib/auth.tsx`), guarded by `_authenticated/route.tsx` with `ssr: false`. Why: project is frontend-only with no Lovable Cloud; swap for the real backend's session endpoints later.
+- All API access goes through `src/api/client.ts` (mock mode via `VITE_USE_MOCK_API=true`); components never fetch directly. Why: switching to the real backend must only require env changes, per `docs/QuestMaster_API_SPEC.md`.
+- Fantasy UI uses reusable `@utility` classes in `src/styles.css` (parchment-panel, btn-crimson, chip-parchment, arcane-selected, gold-heading, wood-panel). Why: one parchment/panel system instead of per-component decoration.
