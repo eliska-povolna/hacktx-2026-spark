@@ -39,7 +39,14 @@ interface AuthContextValue {
   resetPassword: (email: string, newPassword: string) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+// Preserve context identity across hot updates of this module (same pattern
+// as theme-context.tsx) — otherwise mounted consumers lose the provider and
+// crash with "useAuth must be used within AuthProvider" after each edit.
+const AuthContext = import.meta.hot?.data?.["authContext"] as
+  ReturnType<typeof createContext<AuthContextValue | null>> | undefined
+  ?? createContext<AuthContextValue | null>(null);
+
+if (import.meta.hot?.data) import.meta.hot.data["authContext"] = AuthContext;
 
 const ACCOUNTS_KEY = "questmaster.accounts";
 const SESSION_KEY = "questmaster.session";
