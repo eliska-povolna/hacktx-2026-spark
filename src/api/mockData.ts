@@ -239,6 +239,38 @@ export const MOCK_REWARD: QuestReward = {
   ],
 };
 
+// Mock twin of the backend's stressed-customer recommendation
+// (customer-stable → BUY_CURRENT_VEHICLE, customer-stressed → RETURN_VEHICLE).
+export const MOCK_REWARD_STRESSED: QuestReward = {
+  id: "out-toyota-002",
+  title: "Recommended Next Move: Return Vehicle",
+  confidence: 0.88,
+  summary:
+    "With a weaker financial buffer, returning the vehicle at lease end and switching to a flexible mobility plan is the safest next step.",
+  reasons: [
+    "The monthly payment exceeds the safe mobility budget",
+    "Emergency runway is under two months",
+    "Usage has dropped, so a flexible plan costs less",
+  ],
+};
+
+export const MOCK_CUSTOMERS: DemoCustomer[] = [
+  {
+    id: "customer-stable",
+    name: "Sarah Miller",
+    vehicle: "2023 Toyota RAV4",
+    scenario_label: "Financially stable",
+    description: "Strong reserve and stable cash flow.",
+  },
+  {
+    id: "customer-stressed",
+    name: "Jordan Lee",
+    vehicle: "2023 Toyota RAV4",
+    scenario_label: "Financially constrained",
+    description: "Same vehicle context, weaker financial buffer.",
+  },
+];
+
 export const MOCK_LOG: QuestLogEntry[] = [
   { id: "log-1", timestamp: "10:14:02", message: "Read guest feedback from reviews", executor: "TOOL" },
   { id: "log-2", timestamp: "10:14:05", message: "Gather ledger data (revenue, bookings)", executor: "TOOL" },
