@@ -500,7 +500,7 @@ export const TOYOTA_METRICS: RunMetrics = {
   llm_tasks: 2,
 };
 
-export function getAgentsForTheme(theme: AppTheme, agents: AgentDefinition[]): AgentDefinition[] {
+export function getSampleAgentsForTheme(theme: AppTheme, agents: AgentDefinition[]): AgentDefinition[] {
   const presentation =
     theme === "toyota" ? TOYOTA_PRESENTATION : theme === "professional" ? PRO_PRESENTATION : undefined;
   return agents.map((agent) => {
@@ -519,6 +519,16 @@ export function getAgentsForTheme(theme: AppTheme, agents: AgentDefinition[]): A
       portrait: getPortrait(theme, agent.id) || agent.portrait,
     };
   });
+}
+
+// Generated/saved configurations are authoritative; styling never changes them.
+export function getAgentsForTheme(theme: AppTheme, agents: AgentDefinition[]): AgentDefinition[] {
+  return agents.map((agent, index) => ({
+    ...agent,
+    portrait: getPortrait(theme, agent.id) || getPortrait(theme, agent.name.toLowerCase())
+      || getPortrait(theme, ["maya", "rowan", "brann", "selene", "odo", "amara", "kenji"][index % 7] ?? "maya")
+      || agent.portrait,
+  }));
 }
 
 // ---- Mock-content text adapter (presentation only) ----

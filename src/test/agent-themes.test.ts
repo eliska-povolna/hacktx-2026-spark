@@ -3,6 +3,18 @@ import { MOCK_AGENTS, PORTRAITS } from "@/api/mockData";
 import { createCustomAgent, getAgentsForTheme, getPortrait } from "@/lib/theme";
 
 describe("Agent identities across interface styles", () => {
+  it("preserves every generated configuration field across all interfaces", () => {
+    const original = MOCK_AGENTS[0];
+    if (!original) throw new Error("Missing agent fixture");
+    const generated = [{ ...original, id: "maya", name: "Generated Feedback Analyst", role: "Hospitality Analyst",
+      skills: ["Guest feedback"], allowed_tools: ["feedback_reader"],
+      permissions: { data_scopes: ["guest_feedback"], actions: ["read"] } }];
+    for (const theme of ["fantasy", "professional", "toyota"] as const) {
+      const shown = getAgentsForTheme(theme, generated);
+      expect(shown.map(({ portrait: _portrait, ...agent }) => agent))
+        .toEqual(generated.map(({ portrait: _portrait, ...agent }) => agent));
+    }
+  });
   it("restores Fantasy portraits after Professional and Toyota", () => {
     for (const theme of ["professional", "toyota"] as const) {
       const themed = getAgentsForTheme(theme, MOCK_AGENTS);
