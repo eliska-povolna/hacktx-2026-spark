@@ -69,7 +69,11 @@
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-forest: var(--forest);
+}
 
+/* Fonts live outside `@theme inline` so [data-theme] blocks can override
+   the CSS variables at runtime (inline themes bake values at build time). */
+@theme {
   --font-display: "Cinzel", "Georgia", serif;
   --font-body: "Alegreya Sans", "Segoe UI", sans-serif;
 }
@@ -142,6 +146,270 @@
 
   /* Success green */
   --forest: oklch(0.55 0.12 150);
+}
+
+/* ============ PROFESSIONAL THEME — clean enterprise SaaS ============ */
+
+[data-theme="professional"] {
+  /* App shell — white / light gray */
+  --background: oklch(0.985 0.003 250);
+  --foreground: oklch(0.25 0.04 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.25 0.04 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.25 0.04 260);
+  --primary: oklch(0.5 0.1 250);
+  --primary-foreground: oklch(0.98 0.005 250);
+  --secondary: oklch(0.96 0.005 250);
+  --secondary-foreground: oklch(0.3 0.04 260);
+  --muted: oklch(0.96 0.005 250);
+  --muted-foreground: oklch(0.5 0.03 260);
+  --accent: oklch(0.94 0.02 250);
+  --accent-foreground: oklch(0.35 0.08 250);
+  --destructive: oklch(0.55 0.18 25);
+  --destructive-foreground: oklch(0.98 0.005 250);
+  --border: oklch(0.9 0.01 250);
+  --input: oklch(0.88 0.01 250);
+  --ring: oklch(0.5 0.1 250);
+
+  /* Sidebar — white */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.3 0.04 260);
+  --sidebar-primary: oklch(0.5 0.1 250);
+  --sidebar-primary-foreground: oklch(0.98 0.005 250);
+  --sidebar-accent: oklch(0.95 0.008 250);
+  --sidebar-accent-foreground: oklch(0.3 0.04 260);
+  --sidebar-border: oklch(0.91 0.008 250);
+  --sidebar-ring: oklch(0.5 0.1 250);
+
+  /* Panels become clean white cards */
+  --parchment: oklch(1 0 0);
+  --parchment-deep: oklch(0.99 0.003 250);
+  --parchment-foreground: oklch(0.25 0.04 260);
+
+  /* Muted blue accent replaces gold */
+  --gold: oklch(0.5 0.1 250);
+  --gold-bright: oklch(0.35 0.08 260);
+  --gold-dim: oklch(0.85 0.015 250);
+
+  /* Primary buttons become muted blue */
+  --crimson: oklch(0.5 0.1 250);
+  --crimson-deep: oklch(0.42 0.09 255);
+  --crimson-foreground: oklch(0.98 0.005 250);
+
+  /* Selected / active states stay blue */
+  --arcane: oklch(0.55 0.12 250);
+  --arcane-bright: oklch(0.5 0.12 250);
+
+  /* Wood tones → light neutrals */
+  --wood: oklch(0.97 0.005 250);
+  --wood-deep: oklch(1 0 0);
+
+  /* Ink on panels */
+  --ink: oklch(0.25 0.04 260);
+  --ink-soft: oklch(0.5 0.03 260);
+
+  /* Success green */
+  --forest: oklch(0.55 0.13 155);
+
+  /* Modern sans-serif typography */
+  --font-display: "Alegreya Sans", "Segoe UI", sans-serif;
+  --font-body: "Alegreya Sans", "Segoe UI", sans-serif;
+}
+
+/* ============ TOYOTA THEME — automotive / financial services ============ */
+
+[data-theme="toyota"] {
+  /* App shell — bright white, cool light gray */
+  --background: oklch(0.99 0.002 250);
+  --foreground: oklch(0.22 0.02 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.02 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.02 260);
+  --primary: oklch(0.5 0.2 25);
+  --primary-foreground: oklch(0.98 0.005 250);
+  --secondary: oklch(0.96 0.004 250);
+  --secondary-foreground: oklch(0.25 0.02 260);
+  --muted: oklch(0.96 0.004 250);
+  --muted-foreground: oklch(0.48 0.02 260);
+  --accent: oklch(0.95 0.01 25);
+  --accent-foreground: oklch(0.45 0.18 25);
+  --destructive: oklch(0.5 0.2 25);
+  --destructive-foreground: oklch(0.98 0.005 250);
+  --border: oklch(0.9 0.005 250);
+  --input: oklch(0.88 0.005 250);
+  --ring: oklch(0.5 0.2 25);
+
+  /* Sidebar — white with thin border */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.25 0.02 260);
+  --sidebar-primary: oklch(0.5 0.2 25);
+  --sidebar-primary-foreground: oklch(0.98 0.005 250);
+  --sidebar-accent: oklch(0.95 0.005 250);
+  --sidebar-accent-foreground: oklch(0.25 0.02 260);
+  --sidebar-border: oklch(0.91 0.005 250);
+  --sidebar-ring: oklch(0.5 0.2 25);
+
+  /* Panels — very light cool gray */
+  --parchment: oklch(1 0 0);
+  --parchment-deep: oklch(0.975 0.004 250);
+  --parchment-foreground: oklch(0.22 0.02 260);
+
+  /* Charcoal headings, light gray hairlines */
+  --gold: oklch(0.5 0.2 25);
+  --gold-bright: oklch(0.25 0.02 260);
+  --gold-dim: oklch(0.86 0.008 250);
+
+  /* Strong red primary actions */
+  --crimson: oklch(0.5 0.2 25);
+  --crimson-deep: oklch(0.42 0.18 25);
+  --crimson-foreground: oklch(0.98 0.005 250);
+
+  /* Active / selected states — red */
+  --arcane: oklch(0.5 0.2 25);
+  --arcane-bright: oklch(0.5 0.2 25);
+
+  /* Wood tones → light neutrals */
+  --wood: oklch(0.97 0.004 250);
+  --wood-deep: oklch(1 0 0);
+
+  /* Ink on panels — deep charcoal */
+  --ink: oklch(0.22 0.02 260);
+  --ink-soft: oklch(0.48 0.02 260);
+
+  /* Success green */
+  --forest: oklch(0.55 0.13 155);
+
+  /* Clean sans-serif typography */
+  --font-display: "Alegreya Sans", "Segoe UI", sans-serif;
+  --font-body: "Alegreya Sans", "Segoe UI", sans-serif;
+}
+
+/* ---- Shared non-fantasy surface overrides ---- */
+
+[data-theme="professional"] .parchment-panel,
+[data-theme="toyota"] .parchment-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 6%), 0 4px 14px -6px oklch(0 0 0 / 8%);
+}
+
+[data-theme="professional"] .parchment-inset,
+[data-theme="toyota"] .parchment-inset {
+  background: oklch(0.98 0.004 250);
+  border: 1px solid var(--input);
+  box-shadow: none;
+}
+
+[data-theme="professional"] .gold-heading,
+[data-theme="toyota"] .gold-heading {
+  color: var(--foreground);
+  text-shadow: none;
+  letter-spacing: 0;
+}
+
+[data-theme="professional"] .wood-panel,
+[data-theme="toyota"] .wood-panel {
+  background: var(--sidebar);
+  border-right: 1px solid var(--sidebar-border);
+  box-shadow: none;
+}
+
+[data-theme="professional"] .btn-crimson,
+[data-theme="toyota"] .btn-crimson {
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 10%);
+  letter-spacing: 0.01em;
+}
+
+[data-theme="professional"] .btn-crimson:hover,
+[data-theme="toyota"] .btn-crimson:hover {
+  filter: brightness(0.94);
+}
+
+[data-theme="professional"] .btn-outline-gold,
+[data-theme="toyota"] .btn-outline-gold {
+  color: var(--foreground);
+  border: 1px solid var(--input);
+}
+
+[data-theme="professional"] .btn-outline-gold:hover,
+[data-theme="toyota"] .btn-outline-gold:hover {
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
+[data-theme="professional"] .chip-parchment,
+[data-theme="toyota"] .chip-parchment {
+  color: var(--muted-foreground);
+  background: var(--secondary);
+  border: 1px solid var(--border);
+}
+
+[data-theme="professional"] .chip-dark,
+[data-theme="toyota"] .chip-dark {
+  color: var(--muted-foreground);
+  background: var(--secondary);
+  border: 1px solid var(--border);
+}
+
+[data-theme="professional"] .arcane-selected,
+[data-theme="toyota"] .arcane-selected {
+  box-shadow:
+    0 0 0 2px var(--arcane),
+    0 4px 14px -6px oklch(0 0 0 / 15%) !important;
+}
+
+[data-theme="professional"] .divider-gold,
+[data-theme="toyota"] .divider-gold {
+  background: var(--border);
+}
+
+[data-theme="professional"] .candle-glow,
+[data-theme="toyota"] .candle-glow {
+  display: none;
+}
+
+/* Fantasy-only decoration (background art, quotes) hides outside fantasy */
+[data-theme="professional"] .fantasy-only,
+[data-theme="toyota"] .fantasy-only {
+  display: none !important;
+}
+
+/* Professional avatars: initial circle replaces fantasy portraits */
+.agent-portrait-initial {
+  display: none;
+}
+
+[data-theme="professional"] .agent-portrait-img,
+[data-theme="toyota"] .agent-portrait-img {
+  display: none;
+}
+
+[data-theme="professional"] .agent-portrait-initial,
+[data-theme="toyota"] .agent-portrait-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 700;
+}
+
+/* Toyota: subtle road-line accent under the main heading */
+[data-theme="toyota"] .toyota-road {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--primary) 0 14px,
+    transparent 14px 26px
+  );
+  background-size: 100% 2px;
+  background-repeat: no-repeat;
+  background-position: bottom left;
+  padding-bottom: 6px;
 }
 
 @layer base {

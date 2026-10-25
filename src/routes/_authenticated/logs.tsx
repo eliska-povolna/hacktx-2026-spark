@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { getLogEvents } from "@/api/client";
 import type { LogEvent } from "@/api/types";
+import { THEME_COPY, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/logs")({
@@ -34,11 +35,13 @@ const CATEGORY_STYLES: Record<LogEvent["category"], string> = {
 };
 
 function LogsPage() {
+  const { theme } = useTheme();
+  const copy = THEME_COPY[theme];
   const [events, setEvents] = useState<LogEvent[]>([]);
   const [filter, setFilter] = useState<Filter>("All");
 
   useEffect(() => {
-    getLogEvents().then(setEvents).catch(() => toast.error("Could not load the quest log."));
+    getLogEvents().then(setEvents).catch(() => toast.error("Could not load the activity log."));
   }, []);
 
   const visible = useMemo(() => {
@@ -49,10 +52,8 @@ function LogsPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="gold-heading text-3xl font-bold">Quest Log</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Every step your parties have taken, recorded for the chronicles.
-      </p>
+      <h1 className="gold-heading text-3xl font-bold">{copy.pages.logsTitle}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">{copy.pages.logsSub}</p>
 
       <div className="mt-5 flex flex-wrap gap-2">
         {FILTERS.map((f) => (

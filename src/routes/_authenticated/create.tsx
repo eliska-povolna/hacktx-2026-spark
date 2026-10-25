@@ -21,6 +21,13 @@ import { CharacterSheet } from "@/components/CharacterSheet";
 import { ConfigureAdventurerDialog } from "@/components/ConfigureAdventurerDialog";
 import { ExecutorBadge } from "@/components/ExecutorBadge";
 import { PORTRAITS } from "@/api/mockData";
+import {
+  getAgentsForTheme,
+  THEME_COPY,
+  TOYOTA_METRICS,
+  TOYOTA_REWARD,
+  useTheme,
+} from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/create")({
@@ -44,20 +51,14 @@ export const Route = createFileRoute("/_authenticated/create")({
   component: QuestForgePage,
 });
 
-const SAMPLE_QUEST =
-  "Study the recent guest feedback for the Moonlit Griffin Inn and recommend the three highest-impact improvements for service, pricing, and repeat visits.";
-
-const CONTEXT_CHIPS = [
-  { label: "Guest Feedback", icon: FileText },
-  { label: "Ledger Data", icon: BarChart3 },
-  { label: "Competitor Notes", icon: Trophy },
-  { label: "Guild Policies", icon: Shield },
-];
+const CHIP_ICONS = [FileText, BarChart3, Trophy, Shield, Link2];
 
 const TERMINAL_STATUSES = new Set(["COMPLETED", "FAILED", "BUDGET_LIMIT", "APPROVAL_REQUIRED"]);
 
 function QuestForgePage() {
-  const [quest, setQuest] = useState(SAMPLE_QUEST);
+  const { theme } = useTheme();
+  const copy = THEME_COPY[theme];
+  const [quest, setQuest] = useState(copy.sampleQuest);
   const [agents, setAgents] = useState<AgentDefinition[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [planning, setPlanning] = useState(false);
@@ -68,6 +69,13 @@ function QuestForgePage() {
 
   const selected = agents.find((a) => a.id === selectedId) ?? null;
   const configureAgent = agents.find((a) => a.id === configureId) ?? null;
+
+  // Switching themes is presentation-only, but the demo sample content follows
+  // the theme (Toyota shows its mobility decision sample).
+  useEffect(() => {
+    setQuest(THEME_COPY[theme].sampleQuest);
+    setAgents((prev) => getAgentsForTheme(theme, prev));
+  }, [theme]);
 
   useEffect(() => {
     return () => {
@@ -84,9 +92,10 @@ function QuestForgePage() {
     setRun(null);
     try {
       const res = await planTeam(quest);
-      setAgents(res.team.agents);
-      setSelectedId(res.team.agents[0]?.id ?? null);
-      toast.success("Your adventuring party has assembled.");
+      const themedAgents = getAgentsForTheme(theme, res.team.agents);
+      setAgents(themedAgents);
+      setSelectedId(themedAgents[0]?.id ?? null);
+      toast.success("Your team has assembled.");
     } catch {
       toast.error("The guild archives could not be reached.");
     } finally {
@@ -103,13 +112,18 @@ function QuestForgePage() {
       pollRef.current = setInterval(async () => {
         try {
           const next = await getRun(run_id);
+          // Toyota demo overlay: presentation-only mock result for this theme.
+          if (theme === "toyota" && next.status === "COMPLETED") {
+            next.reward = TOYOTA_REWARD;
+            next.metrics = TOYOTA_METRICS;
+          }
           setRun(next);
           if (TERMINAL_STATUSES.has(next.status)) {
             if (pollRef.current) clearInterval(pollRef.current);
             pollRef.current = null;
             setRunning(false);
             if (next.status === "COMPLETED") {
-              toast.success("Quest completed — rewards revealed.");
+              toast.success("Run completed — results revealed.");
             }
           }
         } catch {
@@ -139,10 +153,10 @@ function QuestForgePage() {
     const n = agents.length + 1;
     const custom: AgentDefinition = {
       id: `custom-${Date.now()}`,
-      name: `Adventurer ${n}`,
+      name: `Agent ${n}`,
       role: "Custom Specialist",
-      purpose: "A custom adventurer shaped by your quest.",
-      description: "A custom adventurer. Configure their role, skills, and guardrails.",
+      purpose: "A custom agent shaped by your goal.",
+      description: "A custom agent. Configure their role, skills, and guardrails.",
       skills: ["Custom"],
       instructions: "",
       allowed_tools: ["Scroll Archive"],
@@ -160,14 +174,14 @@ function QuestForgePage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      {/* SECTION 1 — Quest input */}
+      {/* SECTION 1 — Goal input */}
       <section className="parchment-panel p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-display text-2xl font-bold text-ink sm:text-3xl">
-            What quest do you seek?
+          <h1 className="toyota-road font-display text-2xl font-bold text-ink sm:text-3xl">
+            {copy.goalTitle}
           </h1>
           <span className="chip-parchment !text-[10px] uppercase tracking-wider">
-            <Sparkles className="h-3 w-3" /> Sample Quest
+            <Sparkles className="h-3 w-3" /> Sample Goal
           </span>
         </div>
         <textarea
@@ -175,14 +189,17 @@ function QuestForgePage() {
           onChange={(e) => setQuest(e.target.value)}
           rows={3}
           className="parchment-inset mt-4 w-full px-4 py-3 text-sm leading-relaxed text-ink outline-none focus:border-gold-dim"
-          placeholder={SAMPLE_QUEST}
+          placeholder={copy.sampleQuest}
         />
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          {CONTEXT_CHIPS.map((chip) => (
-            <span key={chip.label} className="chip-parchment">
-              <chip.icon className="h-3 w-3" /> {chip.label}
-            </span>
-          ))}
+          {copy.contextChips.map((label, i) => {
+            const ChipIcon = CHIP_ICONS[i % CHIP_ICONS.length]!;
+            return (
+              <span key={label} className="chip-parchment">
+                <ChipIcon className="h-3 w-3" /> {label}
+              </span>
+            );
+          })}
           <button
             type="button"
             onClick={() => toast.info("File attachments arrive with the real backend.")}
@@ -199,7 +216,7 @@ function QuestForgePage() {
               >
                 {running ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" /> Quest in progress...
+                    <Loader2 className="h-4 w-4 animate-spin" /> Run in progress...
                   </>
                 ) : (
                   <>
@@ -211,11 +228,11 @@ function QuestForgePage() {
             <button onClick={assembleParty} disabled={planning} className="btn-crimson px-5 py-2 text-sm">
               {planning ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Consulting the guild archives...
+                  <Loader2 className="h-4 w-4 animate-spin" /> Assembling your team...
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4" /> Assemble My Party
+                  <Sparkles className="h-4 w-4" /> {copy.buildButton}
                 </>
               )}
             </button>
@@ -223,13 +240,13 @@ function QuestForgePage() {
         </div>
       </section>
 
-      {/* SECTION 2 — Adventurers */}
+      {/* SECTION 2 — Team */}
       {agents.length > 0 && (
         <section>
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="gold-heading text-xl font-bold">✦ Meet Your Adventurers ✦</h2>
+            <h2 className="gold-heading text-xl font-bold">{copy.teamTitle}</h2>
             <span className="text-xs text-muted-foreground">
-              {agents.length} adventurers • Ready for your quest
+              {agents.length} {copy.readySuffix}
             </span>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
@@ -246,7 +263,7 @@ function QuestForgePage() {
               className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-gold-dim/60 text-gold-dim transition-colors hover:border-gold hover:text-gold"
             >
               <Plus className="h-6 w-6" />
-              <span className="font-display text-xs font-semibold">Add Custom Adventurer</span>
+              <span className="font-display text-xs font-semibold">{copy.addCustom}</span>
             </button>
           </div>
         </section>
@@ -257,14 +274,14 @@ function QuestForgePage() {
         <CharacterSheet agent={selected} onConfigure={() => setConfigureId(selected.id)} />
       )}
 
-      {/* SECTIONS 4–6 — Rewards / Mana & Cost / Quest Log */}
+      {/* SECTIONS 4–6 — Outputs / Cost / Log */}
       {run && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {/* Quest Rewards */}
+          {/* Outputs */}
           <section className="parchment-panel p-5">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-ink">Quest Rewards</h3>
-              <span className="chip-parchment !text-[10px] uppercase tracking-wider">Mock Output</span>
+              <h3 className="font-display text-lg font-bold text-ink">{copy.outputs}</h3>
+              <span className="chip-parchment !text-[10px] uppercase tracking-wider">{copy.outputsBadge}</span>
             </div>
             {run.reward ? (
               <div>
@@ -288,26 +305,26 @@ function QuestForgePage() {
             ) : (
               <p className="flex items-center gap-2 text-sm italic text-ink-soft">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                The party is still on its quest... ({run.status.toLowerCase().replace("_", " ")})
+                The team is still working... ({run.status.toLowerCase().replace("_", " ")})
               </p>
             )}
           </section>
 
-          {/* Mana & Cost */}
+          {/* Cost & Efficiency */}
           <section className="parchment-panel p-5">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-ink">Mana & Cost</h3>
+              <h3 className="font-display text-lg font-bold text-ink">{copy.cost}</h3>
               <span className="text-[11px] font-semibold text-ink-soft">View Details →</span>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="parchment-inset p-2">
-                <div className="text-[10px] font-bold uppercase tracking-wide text-ink-soft">Total Cost</div>
+                <div className="text-[10px] font-bold uppercase tracking-wide text-ink-soft">AI Cost</div>
                 <div className="font-display text-xl font-bold text-ink">
                   ${run.metrics.estimated_ai_cost_usd.toFixed(2)}
                 </div>
               </div>
               <div className="parchment-inset p-2">
-                <div className="text-[10px] font-bold uppercase tracking-wide text-ink-soft">vs. Full LLM</div>
+                <div className="text-[10px] font-bold uppercase tracking-wide text-ink-soft">Full-LLM Baseline</div>
                 <div className="font-display text-xl font-bold text-ink">
                   ${run.metrics.estimated_baseline_cost_usd.toFixed(2)}
                 </div>
@@ -338,16 +355,16 @@ function QuestForgePage() {
                 </span>
               </div>
               <p className="mt-3 text-[11px] italic leading-snug text-ink-soft">
-                Adventurers define responsibility — the platform chooses code or tools instead of AI
+                Agents define responsibility — the platform chooses code or tools instead of AI
                 whenever they suffice.
               </p>
             </div>
           </section>
 
-          {/* Quest Log */}
+          {/* Log */}
           <section className="parchment-panel p-5">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-ink">Quest Log</h3>
+              <h3 className="font-display text-lg font-bold text-ink">{copy.log}</h3>
               <span className="text-[11px] font-semibold text-ink-soft">
                 {run.log.length} steps
               </span>
@@ -365,7 +382,7 @@ function QuestForgePage() {
               ))}
               {run.log.length === 0 && (
                 <li className="flex items-center gap-2 text-sm italic text-ink-soft">
-                  <Loader2 className="h-4 w-4 animate-spin" /> The quest is being planned...
+                  <Loader2 className="h-4 w-4 animate-spin" /> The run is being planned...
                 </li>
               )}
             </ul>
@@ -378,7 +395,7 @@ function QuestForgePage() {
         <div className="flex items-center gap-3 rounded-lg border border-arcane/60 bg-arcane/20 px-4 py-3">
           <Loader2 className="h-4 w-4 animate-spin text-arcane-bright" />
           <span className="text-sm font-semibold text-foreground">
-            Quest {run.run_id} — {run.status.toLowerCase().replace("_", " ")}...
+            Run {run.run_id} — {run.status.toLowerCase().replace("_", " ")}...
           </span>
           <span className="ms-auto flex gap-1.5">
             {run.tasks.map((t) => (

@@ -37,9 +37,9 @@ function AuthenticatedLayout() {
         alt=""
         width={1920}
         height={1088}
-        className="fixed inset-0 -z-10 h-full w-full object-cover"
+        className="fantasy-only fixed inset-0 -z-10 h-full w-full object-cover"
       />
-      <div className="fixed inset-0 -z-10 bg-black/60" />
+      <div className="fantasy-only fixed inset-0 -z-10 bg-black/60" />
       <div className="candle-glow fixed inset-0 -z-10" />
 
       <div className="flex">

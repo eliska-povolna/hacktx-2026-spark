@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 
 import type { AgentDefinition } from "@/api/types";
+import { THEME_COPY, useTheme } from "@/lib/theme";
 
 interface Props {
   agent: AgentDefinition | null;
@@ -78,6 +79,8 @@ function ListEditor({
 }
 
 export function ConfigureAdventurerDialog({ agent, onClose, onSave, onRemove }: Props) {
+  const { theme } = useTheme();
+  const copy = THEME_COPY[theme];
   const [draft, setDraft] = useState<AgentDefinition | null>(agent);
 
   useEffect(() => {
@@ -94,7 +97,7 @@ export function ConfigureAdventurerDialog({ agent, onClose, onSave, onRemove }: 
       <div className="parchment-panel relative max-h-[85vh] w-full max-w-2xl overflow-y-auto p-6">
         <div className="mb-4 flex items-start justify-between">
           <div>
-            <h3 className="font-display text-xl font-bold text-ink">Configure Adventurer</h3>
+            <h3 className="font-display text-xl font-bold text-ink">{copy.configureTitle}</h3>
             <p className="text-xs text-ink-soft">Changes are kept in this session only.</p>
           </div>
           <button onClick={onClose} aria-label="Close" className="rounded p-1 text-ink-soft hover:text-ink">
@@ -166,7 +169,7 @@ export function ConfigureAdventurerDialog({ agent, onClose, onSave, onRemove }: 
             placeholder="Add a skill"
           />
           <ListEditor
-            label="Tools & Artifacts"
+            label={copy.toolsTitle}
             items={draft.allowed_tools}
             onChange={(allowed_tools) => update({ allowed_tools })}
             placeholder="Add a tool"
@@ -193,7 +196,7 @@ export function ConfigureAdventurerDialog({ agent, onClose, onSave, onRemove }: 
             }}
             className="inline-flex items-center gap-1.5 rounded-md border border-crimson/60 px-3 py-2 text-xs font-semibold text-crimson hover:bg-crimson/10"
           >
-            <Trash2 className="h-3.5 w-3.5" /> Remove adventurer
+            <Trash2 className="h-3.5 w-3.5" /> {copy.removeAgent}
           </button>
           <div className="flex gap-2">
             <button onClick={onClose} className="btn-outline-gold px-4 py-2 text-xs !text-ink">

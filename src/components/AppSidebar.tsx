@@ -15,16 +15,18 @@ import {
 import { useState } from "react";
 
 import { CrestLogo } from "@/components/CrestLogo";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useAuth } from "@/lib/auth";
+import { THEME_COPY, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
-  { title: "Quest Forge", subtitle: "Create new quests", to: "/create", icon: Feather },
-  { title: "Adventuring Parties", subtitle: "Manage your teams", to: "/teams", icon: Users },
-  { title: "Chronicles", subtitle: "Reports & insights", to: "/reports", icon: Scroll },
-  { title: "Quest Log", subtitle: "Activity & execution logs", to: "/logs", icon: BookOpen },
-  { title: "Sanctum", subtitle: "Settings & integrations", to: "/settings", icon: Settings },
-] as const;
+const NAV_ICONS = {
+  create: Feather,
+  teams: Users,
+  reports: Scroll,
+  logs: BookOpen,
+  settings: Settings,
+} as const;
 
 const SAVED_PARTIES = [
   { name: "Merchant Insight Party", icon: Gem },
@@ -35,7 +37,17 @@ const SAVED_PARTIES = [
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const { user, logout } = useAuth();
+  const { theme } = useTheme();
+  const copy = THEME_COPY[theme];
   const navigate = useNavigate();
+
+  const navItems = [
+    { title: copy.nav.create, subtitle: copy.nav.createSub, to: "/create", icon: NAV_ICONS.create },
+    { title: copy.nav.teams, subtitle: copy.nav.teamsSub, to: "/teams", icon: NAV_ICONS.teams },
+    { title: copy.nav.reports, subtitle: copy.nav.reportsSub, to: "/reports", icon: NAV_ICONS.reports },
+    { title: copy.nav.logs, subtitle: copy.nav.logsSub, to: "/logs", icon: NAV_ICONS.logs },
+    { title: copy.nav.settings, subtitle: copy.nav.settingsSub, to: "/settings", icon: NAV_ICONS.settings },
+  ] as const;
 
   const handleLogout = () => {
     logout();
@@ -49,12 +61,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <CrestLogo className="h-11 w-11 text-gold" />
         <div>
           <div className="font-display text-xl font-bold tracking-wide text-gold-bright">
-            QuestMaster
+            {copy.brandName}
           </div>
-          <div className="text-[11px] leading-tight text-muted-foreground">
-            The best agent platform
-            <br />
-            knows when not to use an agent.
+          <div className="whitespace-pre-line text-[11px] leading-tight text-muted-foreground">
+            {copy.brandTagline}
           </div>
         </div>
       </div>
@@ -63,7 +73,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Navigation */}
       <nav className="mt-3 flex-1 space-y-1 px-3">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const active = currentPath === item.to;
           return (
             <Link
@@ -88,8 +98,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
         {/* Saved parties */}
         <div className="pt-5">
-          <div className="px-3 pb-2 text-[10px] font-bold tracking-[0.2em] text-gold-dim">
-            SAVED PARTIES
+          <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gold-dim">
+            {copy.savedParties}
           </div>
           {SAVED_PARTIES.map((party) => (
             <Link
@@ -107,11 +117,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Bottom decoration + user */}
       <div className="px-5 pb-5">
-        <div className="mb-4 rounded-md border border-gold-dim/40 bg-wood-deep/60 p-3 text-center">
+        <div className="fantasy-only mb-4 rounded-md border border-gold-dim/40 bg-wood-deep/60 p-3 text-center">
           <Flame className="mx-auto mb-1 h-4 w-4 text-gold" />
           <p className="font-display text-[11px] italic leading-snug text-gold/80">
-            “Good questions lead to greater journeys.”
+            {copy.quote}
           </p>
+        </div>
+        <div className="mb-3">
+          <ThemeSwitcher compact />
         </div>
         <hr className="divider-gold mb-3" />
         <div className="flex items-center gap-3">
@@ -124,7 +137,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </div>
           <button
             onClick={handleLogout}
-            title="Leave the guild (log out)"
+            title="Log out"
             className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-crimson"
           >
             <LogOut className="h-4 w-4" />
@@ -137,6 +150,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 export function AppSidebar() {
   const [open, setOpen] = useState(false);
+  const { theme } = useTheme();
 
   return (
     <>
@@ -150,7 +164,9 @@ export function AppSidebar() {
           <Menu className="h-5 w-5" />
         </button>
         <CrestLogo className="h-7 w-7 text-gold" />
-        <span className="font-display text-lg font-bold text-gold-bright">QuestMaster</span>
+        <span className="font-display text-lg font-bold text-gold-bright">
+          {THEME_COPY[theme].brandName}
+        </span>
       </div>
 
       {/* Mobile drawer */}
