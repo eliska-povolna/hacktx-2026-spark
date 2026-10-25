@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import {
   BarChart3,
@@ -16,7 +17,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { ApiRequestError, createRun, deleteAttachment, getDemoCustomers, getRun, getSavedTeam, isMockMode, planTeam, uploadAttachment } from "@/api/client";
+import { ApiRequestError, createRun, deleteAttachment, getDemoCustomers, getRun, getSavedTeam, isMockMode, planTeam, saveTeam, uploadAttachment } from "@/api/client";
+import { savedTeamsQueryOptions } from "@/api/saved-teams-query";
 import type { AgentDefinition, Attachment, DemoCustomer, Run, TeamDefinition } from "@/api/types";
 import { AdventurerCard } from "@/components/AdventurerCard";
 import { CharacterSheet } from "@/components/CharacterSheet";
@@ -72,6 +74,8 @@ const TERMINAL_MESSAGES: Record<string, string> = {
 
 function QuestForgePage() {
   const { theme } = useTheme();
+  const queryClient = useQueryClient();
+  const [saving, setSaving] = useState(false);
   const copy = THEME_COPY[theme];
   // The theme's sample goal is only the INITIAL value — switching themes must
   // never overwrite the user's quest text, selected agents, or run state.
@@ -119,7 +123,7 @@ function QuestForgePage() {
       setPlannedTeam(team); setAgents(team.agents); setQuest(team.goal);
       setSelectedId(team.agents[0]?.id ?? null);
       setRun(null);
-    }).catch(() => { if (active) toast.error("Could not open the saved team."); })
+    }).catch((error) => { if (active) toast.error(error instanceof Error ? error.message : "Could not open the saved team."); })
       .finally(() => { if (active) setLoadingTeam(false); });
     return () => { active = false; };
   }, [teamId]);
@@ -202,12 +206,26 @@ function QuestForgePage() {
       setPlannedTeam(res.team);
       setAgents(res.team.agents);
       setSelectedId(res.team.agents[0]?.id ?? null);
-      if (res.saved_team) setPlannedTeam(res.saved_team);
       toast.success("Your team has assembled.");
     } catch (error) {
       toast.error(error instanceof ApiRequestError ? error.message : copy.toastPlanError);
     } finally {
       setPlanning(false);
+    }
+  };
+
+  const saveChanges = async () => {
+    if (!plannedTeam || saving) return;
+    setSaving(true);
+    try {
+      const saved = await saveTeam({ goal: quest, team: { ...plannedTeam, agents: baseAgents } });
+      setPlannedTeam((current) => current ? { ...current, id: saved.id } : current);
+      await queryClient.invalidateQueries({ queryKey: savedTeamsQueryOptions.queryKey });
+      toast.success(`${saved.name} saved.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save the team.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -424,8 +442,8 @@ function QuestForgePage() {
             <span className="text-xs text-muted-foreground">
               {agents.length} {copy.readySuffix}
             </span>
-            <Button variant="outline" disabled title="Team saving is unavailable.">
-              <Save /> Save Team
+            <Button variant="outline" onClick={saveChanges} disabled={saving || planning || running || loadingTeam || !plannedTeam}>
+              {saving ? <Loader2 className="animate-spin" /> : <Save />} Save Team
             </Button>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
