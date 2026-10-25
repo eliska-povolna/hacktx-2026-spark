@@ -453,18 +453,37 @@ export function getThemePortraitByIndex(theme: AppTheme, index: number): string 
 // random hash, classify each agent by its function (role/skills/purpose/
 // scopes) and give it the matching canonical identity: Maya = finance,
 // Rowan = research, Brann = operations/analysis, Selene = decision/strategy,
-// Odo = review/policy. The same function always gets the same portrait in
-// every theme. Agents whose function does not match keep identity hashing.
+// Odo = review/policy, Amara = communication/support, Kenji = engineering/
+// data pipelines. The same function always gets the same portrait and
+// persona name in every theme. Agents whose function does not match keep
+// identity hashing into the remaining pool.
 
-type AgentFunctionKey = "maya" | "rowan" | "brann" | "selene" | "odo";
+type AgentFunctionKey = "maya" | "rowan" | "brann" | "selene" | "odo" | "amara" | "kenji";
+
+// Canonical persona name for each function identity — profile cards show
+// this name, while the agent's role keeps describing its function.
+export const FUNCTION_NAMES: Record<AgentFunctionKey, string> = {
+  maya: "Maya",
+  rowan: "Rowan",
+  brann: "Brann",
+  selene: "Selene",
+  odo: "Odo",
+  amara: "Amara",
+  kenji: "Kenji",
+};
 
 // Review/policy is checked first — its agents often mention costs or data
 // ("reviews budget compliance"), and the more specific function should win.
+// Engineering (Kenji) and communication/support (Amara) come before the
+// broad analysis catch-all (Brann) so "data engineer" or "support writer"
+// are not swallowed by "data"/"analy".
 const FUNCTION_KEYWORDS: [RegExp, AgentFunctionKey][] = [
   [/review|polic|valid|guard|complian|secur|quality|safety|audit|risk|ethic/i, "odo"],
   [/financ|budget|cost|ledger|billing|cash.?flow|affordab|accounting/i, "maya"],
   [/research|gather|web.?search|explor|survey|discover/i, "rowan"],
   [/decision|recommend|strateg|synthes|model|priorit/i, "selene"],
+  [/engineer|cod(e|ing)|develop|program|etl|pipeline|sql|database|\bapi\b|technical|integrat/i, "kenji"],
+  [/communicat|support|service|writ|draft|copy|content|document|onboard|train|present|market/i, "amara"],
   [/analy|optimi|process|pattern|operation|metric|vehicle|usage|data(?!\s*privacy)/i, "brann"],
 ];
 
