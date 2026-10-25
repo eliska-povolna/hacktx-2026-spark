@@ -335,29 +335,7 @@ export const TOYOTA_METRICS: RunMetrics = {
 };
 
 export function getAgentsForTheme(theme: AppTheme, agents: AgentDefinition[]): AgentDefinition[] {
-  return theme === "toyota" ? TOYOTA_AGENTS : agents;
-}
-
-// ---- Theme-specific agent portraits ----
-
-const PRO_PORTRAITS: Record<string, string> = {
-  maya: proMaya,
-  rowan: proRowan,
-  brann: proBrann,
-  selene: proSelene,
-  odo: proOdo,
-};
-
-const TOYOTA_PORTRAITS: Record<string, string> = {
-  maya: toyotaMaya,
-  rowan: toyotaRowan,
-  brann: toyotaBrann,
-  selene: toyotaSelene,
-  odo: toyotaOdo,
-};
-
-export function getPortrait(theme: AppTheme, agentId: string): string {
-  if (theme === "professional") return PRO_PORTRAITS[agentId] ?? PORTRAITS[agentId] ?? "";
-  if (theme === "toyota") return TOYOTA_PORTRAITS[agentId] ?? PORTRAITS[agentId] ?? "";
-  return PORTRAITS[agentId] ?? "";
+  const base = theme === "toyota" ? TOYOTA_AGENTS : agents;
+  if (theme === "fantasy") return base;
+  return base.map((agent) => ({ ...agent, portrait: getPortrait(theme, agent.id) }));
 }
