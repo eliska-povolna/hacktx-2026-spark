@@ -13,8 +13,15 @@ import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { AuthProvider } from "../lib/auth";
-import { ThemeProvider } from "../lib/theme-context";
+import { ThemeProvider, useTheme } from "../lib/theme-context";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+
+// Toaster follows the active interface style: dark for the fantasy shell,
+// light for the Professional/Toyota surfaces.
+function ThemedToaster() {
+  const { theme } = useTheme();
+  return <Toaster theme={theme === "fantasy" ? "dark" : "light"} position="bottom-right" />;
+}
 
 function NotFoundComponent() {
   return (
@@ -77,17 +84,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "QuestMaster — Assemble your AI adventuring party" },
+      { title: "QuestMaster — AI agent teams" },
       {
         name: "description",
         content:
-          "QuestMaster turns your goals into quests and assembles a party of specialized AI adventurers. The best agent platform knows when not to use an agent.",
+          "QuestMaster turns your goals into runs and assembles a team of specialized AI agents. The best agent platform knows when not to use an agent.",
       },
-      { property: "og:title", content: "QuestMaster — Assemble your AI adventuring party" },
+      { property: "og:title", content: "QuestMaster — AI agent teams" },
       {
         property: "og:description",
         content:
-          "Describe a quest, meet your adventurers, and let the party decide when code and tools beat AI calls.",
+          "Describe a goal, meet your agents, and let the team decide when code and tools beat AI calls.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -138,7 +145,7 @@ function RootComponent() {
         <AuthProvider>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
-          <Toaster theme="dark" position="bottom-right" />
+          <ThemedToaster />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
