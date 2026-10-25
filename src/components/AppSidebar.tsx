@@ -55,9 +55,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain">
       {/* Brand */}
-      <div className="flex items-center gap-3 px-5 pt-6 pb-4">
+      <div className="flex shrink-0 items-center gap-3 px-5 pt-6 pb-4">
         <CrestLogo className="h-11 w-11 text-gold" />
         <div>
           <div className="font-display text-xl font-bold tracking-wide text-gold-bright">
@@ -69,10 +69,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      <hr className="divider-gold mx-4" />
+      <hr className="divider-gold mx-4 shrink-0" />
 
       {/* Navigation */}
-      <nav className="mt-3 flex-1 space-y-1 px-3">
+      <nav className="mt-3 flex-1 shrink-0 space-y-1 px-3">
         {navItems.map((item) => {
           const active = currentPath === item.to;
           return (
@@ -116,7 +116,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       {/* Bottom decoration + user */}
-      <div className="px-5 pb-5">
+      <div className="shrink-0 px-5 pb-5">
         <div className="fantasy-only mb-4 rounded-md border border-gold-dim/40 bg-wood-deep/60 p-3 text-center">
           <Flame className="mx-auto mb-1 h-4 w-4 text-gold" />
           <p className="font-display text-[11px] italic leading-snug text-gold/80">
@@ -173,7 +173,7 @@ export function AppSidebar() {
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/70" onClick={() => setOpen(false)} />
-          <aside className="wood-panel absolute inset-y-0 left-0 w-72">
+          <aside className="wood-panel absolute left-0 top-0 h-dvh w-72">
             <button
               onClick={() => setOpen(false)}
               aria-label="Close navigation"
@@ -187,7 +187,7 @@ export function AppSidebar() {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="wood-panel sticky top-0 hidden h-screen w-72 shrink-0 lg:block">
+      <aside className="wood-panel sticky top-0 hidden h-dvh w-72 shrink-0 lg:block">
         <SidebarContent />
       </aside>
     </>
